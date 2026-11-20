@@ -34,15 +34,15 @@
 └────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-- 📊 **Table-Style Header Group Rows (`header_group`)**:
-  - Each log entry is represented as a clean, single-line summary row.
-  - Displays **`log_type`** (e.g. `local.ERROR`, `production.WARNING`, `PHP Fatal error`), **`log_create_date`** (`2026-11-11 05:06:16`), and clean **`header_text`** (human-readable error description without JSON clutter).
-- 📂 **Click-to-Expand Body Content (`body_content`)**:
-  - Clicking anywhere on a header row smoothly opens the full error record.
-  - **Exception Card**: Exception class badge in red, error message, and exact location (`in <file> on line <line>`).
+- 📊 **Clean Table-Style Summary Rows**:
+  - Each log entry is represented as an organized, single-line summary row.
+  - Displays the **Severity & Environment** (e.g. `local.ERROR`, `production.WARNING`, `PHP Fatal error`), **Timestamp** (`2026-11-11 05:06:16`), and a clean **Error Message** (human-readable description without raw JSON clutter).
+- 📂 **Click-to-Expand Detailed View**:
+  - Clicking anywhere on a log row smoothly opens the full error record and stack trace.
+  - **Exception Card**: Exception class badge in red, clear error message, and exact location (`in <file> on line <line>`).
   - **Stack Trace Frames**: Formatted frame-by-frame (`#0`, `#1`), file paths in blue, line numbers in orange, and method calls.
-  - **Context JSON Tab**: Formatted, readable JSON context.
-  - **Raw Log Tab**: Verbatim full log content with a one-click copy button.
+  - **Context JSON Tab**: Formatted, readable JSON context data.
+  - **Raw Log Tab**: Verbatim complete log entry with a one-click copy button.
 - 🔝 **Latest Logs on Top (Newest First by Default)**:
   - Displays the newest log entries at the very top of the screen (`desc` order) so developers immediately see recent errors and events without scrolling to the bottom.
   - One-click toolbar toggle to switch anytime between **Newest First** and **Oldest First**.
@@ -322,7 +322,7 @@ RaytechLogViewer::allowAll();
 
 | Action | Control / Shortcut |
 |---|---|
-| **Toggle Details** | Click anywhere on the log header row (`header_group`) |
+| **Toggle Details** | Click anywhere on a log entry row |
 | **Sort Order** | Click `Newest First` / `Oldest First` toggle button |
 | **Bulk Expand / Collapse** | Click `Expand All` / `Collapse All` toolbar button |
 | **Search Logs** | <kbd>Ctrl</kbd> + <kbd>F</kbd> or <kbd>Cmd</kbd> + <kbd>F</kbd> |
@@ -358,7 +358,7 @@ log_plugin/
 │   │   └── RaytechLogViewer.php        # Laravel Facade
 │   ├── Services/
 │   │   ├── LogFileManager.php          # File scanner & fast chunked tail reader
-│   │   └── LogParser.php               # Parser (log_type, date, header_text, stack trace)
+│   │   └── LogParser.php               # Parser (levels, dates, messages, stack traces)
 │   ├── Http/
 │   │   └── Controllers/
 │   │       └── RaytechLogViewerController.php # Web controller & asset auto-sync
