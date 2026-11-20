@@ -54,6 +54,10 @@ class RaytechLogViewerServiceProvider extends ServiceProvider
                 __DIR__ . '/../resources/views' => resource_path('views/vendor/raytech-log-viewer'),
             ], 'raytech-log-viewer-views');
 
+            $this->publishes([
+                __DIR__ . '/../public' => public_path('vendor/raytech-log-viewer'),
+            ], 'raytech-log-viewer-assets');
+
             $this->commands([
                 InstallCommand::class,
                 ClearCommand::class,

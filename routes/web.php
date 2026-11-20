@@ -21,5 +21,6 @@ if ($enabled) {
         Route::post('/clear', [RaytechLogViewerController::class, 'clear'])->name('clear');
         Route::get('/download', [RaytechLogViewerController::class, 'download'])->name('download');
         Route::get('/raw', [RaytechLogViewerController::class, 'raw'])->name('raw');
+        Route::get('/assets/{file}', [RaytechLogViewerController::class, 'asset'])->where('file', '.*')->name('asset');
     });
 }

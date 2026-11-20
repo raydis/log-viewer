@@ -44,8 +44,10 @@ return [
     | - primary_color: Primary brand color used for active accents, buttons, and badges
     | - title: HTML page title
     | - brand_name: Header branding text displayed in topbar
-    | - back_url: Target URL when clicking the "Back to App" button
-    | - show_back_button: Whether to show the "Back to App" button in topbar
+    | - brand_logo: Path or URL to brand logo / browser title icon (default: 'vendor/raytech-log-viewer/img/default_logo.jpg')
+    | - back_url: Target URL when clicking the back button
+    | - back_url_name: Text label displayed on the back button
+    | - show_back_button: Whether to show the back button in topbar
     |
     */
     'theme' => [
@@ -53,10 +55,10 @@ return [
         'primary_color' => env('RAYTECH_LOG_VIEWER_PRIMARY_COLOR', '#1f6feb'),
         'title' => env('RAYTECH_LOG_VIEWER_TITLE', 'RayTech Log Viewer'),
         'brand_name' => env('RAYTECH_LOG_VIEWER_BRAND', 'RayTech'),
-        'brand_logo' => env('RAYTECH_LOG_LOGOPATH', ''),
+        'brand_logo' => env('RAYTECH_LOG_VIEWER_LOGO', env('RAYTECH_LOG_LOGOPATH', 'vendor/raytech-log-viewer/img/default_logo.jpg')),
         'back_url' => env('RAYTECH_LOG_VIEWER_BACK_URL', '/'),
-		'back_url_name' => env('RAYTECH_LOG_VIEWER_BACK_URL_NAME', 'Back To Home'),
-        'show_back_button' => true,
+        'back_url_name' => env('RAYTECH_LOG_VIEWER_BACK_URL_NAME', 'Back To Home'),
+        'show_back_button' => env('RAYTECH_LOG_VIEWER_SHOW_BACK_BUTTON', true),
     ],
 
     /*

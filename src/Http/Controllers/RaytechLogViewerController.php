@@ -64,9 +64,9 @@ class RaytechLogViewerController extends Controller
                     }
 
                     return $next($request);
-                });
+                })->except(['asset']);
             } elseif (is_string($mw)) {
-                $this->middleware($mw);
+                $this->middleware($mw)->except(['asset']);
             }
         }
     }
@@ -204,6 +204,7 @@ class RaytechLogViewerController extends Controller
             'themeConfig' => config('raytech-log-viewer.theme', []),
             'features' => config('raytech-log-viewer.features', []),
             'assets' => config('raytech-log-viewer.assets', []),
+            'logoUrl' => $this->resolveLogoUrl(),
         ]);
     }
 
@@ -317,6 +318,125 @@ class RaytechLogViewerController extends Controller
 
         return response()->file($targetFile['path'], [
             'Content-Type' => 'text/plain; charset=utf-8',
+        ]);
+    }
+
+    /**
+     * Resolve the browser icon and branding logo URL.
+     *
+     * @return string
+     */
+    protected function resolveLogoUrl(): string
+    {
+        $rawLogo = config('raytech-log-viewer.theme.brand_logo')
+            ?: env('RAYTECH_LOG_VIEWER_LOGO')
+            ?: env('RAYTECH_LOG_LOGOPATH');
+
+        $namePrefix = config('raytech-log-viewer.route.name', 'raytech-log-viewer.');
+
+        // If no logo specified or empty
+        if (empty($rawLogo)) {
+            $rawLogo = 'img/default_logo.jpg';
+        }
+
+        // If fully-qualified URL or data URI
+        if (preg_match('#^(https?:)?//#i', $rawLogo) || str_starts_with($rawLogo, 'data:image')) {
+            return $rawLogo;
+        }
+
+        // Clean leading slashes
+        $trimmed = ltrim($rawLogo, '/\\');
+
+        // Check if file exists directly in public directory
+        if (function_exists('public_path')) {
+            if (file_exists(public_path($trimmed))) {
+                return asset($trimmed);
+            }
+            if (file_exists(public_path('vendor/raytech-log-viewer/' . $trimmed))) {
+                return asset('vendor/raytech-log-viewer/' . $trimmed);
+            }
+            if ($trimmed === 'default_logo.jpg' && file_exists(public_path('vendor/raytech-log-viewer/img/default_logo.jpg'))) {
+                return asset('vendor/raytech-log-viewer/img/default_logo.jpg');
+            }
+        }
+
+        // Standardize default_logo.jpg to img/default_logo.jpg
+        if ($trimmed === 'default_logo.jpg') {
+            $trimmed = 'img/default_logo.jpg';
+        }
+
+        // Serve via package asset route
+        try {
+            return route($namePrefix . 'asset', ['file' => $trimmed]);
+        } catch (\Throwable $e) {
+            return asset($trimmed);
+        }
+    }
+
+    /**
+     * Serve static package assets (css, js, images) directly if not published.
+     *
+     * @param string $file
+     * @return \Symfony\Component\HttpFoundation\BinaryFileResponse|\Illuminate\Http\Response
+     */
+    public function asset(string $file)
+    {
+        // Sanitize path against directory traversal
+        $file = str_replace(['../', '..\\'], '', $file);
+        $file = ltrim($file, '/\\');
+
+        $targetPath = null;
+
+        // 1. Check published public path
+        if (function_exists('public_path')) {
+            $published = public_path('vendor/raytech-log-viewer/' . $file);
+            if (file_exists($published) && is_file($published)) {
+                $targetPath = $published;
+            }
+        }
+
+        // 2. Check package public folder
+        if (!$targetPath) {
+            $packagePublic = realpath(__DIR__ . '/../../public');
+            $candidate = realpath(__DIR__ . '/../../public/' . $file);
+            if ($packagePublic && $candidate && str_starts_with($candidate, $packagePublic) && is_file($candidate)) {
+                $targetPath = $candidate;
+            }
+        }
+
+        // 3. Fallback for default logo specifically
+        if (!$targetPath && ($file === 'default_logo.jpg' || $file === 'img/default_logo.jpg')) {
+            $candidate = realpath(__DIR__ . '/../../public/img/default_logo.jpg')
+                ?: realpath(__DIR__ . '/../../default_logo.jpg');
+            if ($candidate && is_file($candidate)) {
+                $targetPath = $candidate;
+            }
+        }
+
+        if (!$targetPath || !file_exists($targetPath)) {
+            abort(404, 'Asset not found.');
+        }
+
+        $extension = strtolower(pathinfo($targetPath, PATHINFO_EXTENSION));
+        $contentTypes = [
+            'css'   => 'text/css; charset=utf-8',
+            'js'    => 'application/javascript; charset=utf-8',
+            'jpg'   => 'image/jpeg',
+            'jpeg'  => 'image/jpeg',
+            'png'   => 'image/png',
+            'gif'   => 'image/gif',
+            'svg'   => 'image/svg+xml',
+            'ico'   => 'image/x-icon',
+            'woff'  => 'font/woff',
+            'woff2' => 'font/woff2',
+            'ttf'   => 'font/ttf',
+        ];
+
+        $contentType = $contentTypes[$extension] ?? 'application/octet-stream';
+
+        return response()->file($targetPath, [
+            'Content-Type' => $contentType,
+            'Cache-Control' => 'public, max-age=31536000',
         ]);
     }
 }
