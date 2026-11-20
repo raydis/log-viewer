@@ -4,7 +4,7 @@
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![PHP Version](https://img.shields.io/badge/php-%5E8.0-8892BF.svg)
-![Laravel](https://img.shields.io/badge/laravel-%5E9.0%20%7C%20%5E10.0%20%7C%20%5E11.0%20%7C%20%5E12.0-FF2D20.svg)
+![Laravel](https://img.shields.io/badge/laravel-%5E8.0%20%7C%20%5E9.0%20%7C%20%5E10.0%20%7C%20%5E11.0%20%7C%20%5E12.0-FF2D20.svg)
 
 ---
 
@@ -39,39 +39,39 @@
 
 ## 📦 Installation
 
-### Option 1: Direct from GitHub Repository URL (VCS)
+### Option 1: Direct from GitHub (Public Repository)
 
-If your plugin is hosted on GitHub (public or private) and not yet published to Packagist, you can install it directly via Git:
+Install directly from the public GitHub repository without needing any personal tokens or authentication:
 
-#### Method A: Using Composer CLI Commands (Quickest)
+#### Method A: Using Two Composer Commands (Quickest)
 
 Run these two commands in your Laravel project root:
 
 ```bash
-# 1. Add GitHub repository to composer
-composer config repositories.raytech-log-viewer vcs https://github.com/your-username/log_plugin.git
+# 1. Add the GitHub repository to your project
+composer config repositories.log-viewer vcs https://github.com/umesh240/log-viewer.git
 
-# 2. Require the package from branch (e.g. dev-main or dev-master)
+# 2. Require the package
 composer require raytech/raytech-log-viewer:dev-main
 ```
 
-> **Note**: Replace `https://github.com/your-username/log_plugin.git` with your actual GitHub URL, and `dev-main` with `dev-master` if your default branch is `master`.
+*(If your default branch is `master`, use `composer require raytech/raytech-log-viewer:dev-master`).*
 
-#### Method B: Editing `composer.json` Manually
+---
 
-Add the `vcs` repository entry to your Laravel application's `composer.json`:
+#### Method B: By Editing `composer.json`
+
+Add the repository in your Laravel application's `composer.json`:
 
 ```json
-{
-    "repositories": [
-        {
-            "type": "vcs",
-            "url": "https://github.com/your-username/log_plugin.git"
-        }
-    ],
-    "require": {
-        "raytech/raytech-log-viewer": "dev-main"
+"repositories": [
+    {
+        "type": "vcs",
+        "url": "https://github.com/umesh240/log-viewer.git"
     }
+],
+"require": {
+    "raytech/raytech-log-viewer": "dev-main"
 }
 ```
 
@@ -80,11 +80,6 @@ Then run:
 ```bash
 composer update raytech/raytech-log-viewer
 ```
-
-> 🔒 **Private GitHub Repositories**: If the repository is private, use the SSH clone URL: `git@github.com:your-username/log_plugin.git`, or authenticate Composer with a GitHub Personal Access Token:
-> ```bash
-> composer config --global github-oauth.github.com YOUR_GITHUB_TOKEN
-> ```
 
 ---
 
