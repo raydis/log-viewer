@@ -39,15 +39,69 @@
 
 ## 📦 Installation
 
-### Option 1: Install from Local Path Repository (Recommended for Local Development)
+### Option 1: Direct from GitHub Repository URL (VCS)
 
-In your Laravel project's `composer.json`, add the local repository and require the package:
+If your plugin is hosted on GitHub (public or private) and not yet published to Packagist, you can install it directly via Git:
+
+#### Method A: Using Composer CLI Commands (Quickest)
+
+Run these two commands in your Laravel project root:
+
+```bash
+# 1. Add GitHub repository to composer
+composer config repositories.raytech-log-viewer vcs https://github.com/your-username/log_plugin.git
+
+# 2. Require the package from branch (e.g. dev-main or dev-master)
+composer require raytech/raytech-log-viewer:dev-main
+```
+
+> **Note**: Replace `https://github.com/your-username/log_plugin.git` with your actual GitHub URL, and `dev-main` with `dev-master` if your default branch is `master`.
+
+#### Method B: Editing `composer.json` Manually
+
+Add the `vcs` repository entry to your Laravel application's `composer.json`:
+
+```json
+{
+    "repositories": [
+        {
+            "type": "vcs",
+            "url": "https://github.com/your-username/log_plugin.git"
+        }
+    ],
+    "require": {
+        "raytech/raytech-log-viewer": "dev-main"
+    }
+}
+```
+
+Then run:
+
+```bash
+composer update raytech/raytech-log-viewer
+```
+
+> 🔒 **Private GitHub Repositories**: If the repository is private, use the SSH clone URL: `git@github.com:your-username/log_plugin.git`, or authenticate Composer with a GitHub Personal Access Token:
+> ```bash
+> composer config --global github-oauth.github.com YOUR_GITHUB_TOKEN
+> ```
+
+---
+
+### Option 2: Install from Local Path Repository (Recommended for Local Development)
+
+When developing locally on the same machine without pushing every change:
+
+In your Laravel project's `composer.json`:
 
 ```json
 "repositories": [
     {
         "type": "path",
-        "url": "E:/wamp/www/log_plugin"
+        "url": "E:/wamp/www/log_plugin",
+        "options": {
+            "symlink": true
+        }
     }
 ],
 "require": {
@@ -61,11 +115,53 @@ Then run:
 composer update raytech/raytech-log-viewer
 ```
 
-### Option 2: Standard Composer Require (When Published / Packagist)
+---
+
+### Option 3: Standard Composer Require (When Published on Packagist)
+
+Once submitted to [packagist.org](https://packagist.org):
 
 ```bash
 composer require raytech/raytech-log-viewer
 ```
+
+---
+
+### Option 4: Manual Copy (Without Composer Repositories)
+
+You can also copy the plugin folder directly into your Laravel project:
+
+1. Copy the plugin directory into your Laravel project under `packages/raytech/log-viewer`:
+   ```
+   your-laravel-app/
+   └── packages/
+       └── raytech/
+           └── log-viewer/
+               ├── config/
+               ├── public/
+               ├── resources/
+               ├── routes/
+               ├── src/
+               └── composer.json
+   ```
+
+2. Register the namespace in your Laravel project's `composer.json` under `autoload`:
+   ```json
+   "autoload": {
+       "psr-4": {
+           "App\\": "app/",
+           "Raytech\\LogViewer\\": "packages/raytech/log-viewer/src/"
+       }
+   }
+   ```
+
+3. Run `composer dump-autoload`
+
+4. In Laravel 9/10, add the Service Provider to `config/app.php` (under `'providers'`):
+   ```php
+   Raytech\LogViewer\RaytechLogViewerServiceProvider::class,
+   ```
+   *(In Laravel 11/12, add it to `bootstrap/providers.php`).*
 
 ---
 
