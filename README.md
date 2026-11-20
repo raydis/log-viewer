@@ -9,12 +9,77 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/umesh240/log-viewer"><img src="https://img.shields.io/badge/version-1.2.2-brightgreen.svg" alt="Version"></a>
+  <a href="https://github.com/umesh240/log-viewer"><img src="https://img.shields.io/badge/version-1.2.4-brightgreen.svg" alt="Version"></a>
   <a href="https://packagist.org/packages/raytech/raytech-log-viewer"><img src="https://img.shields.io/badge/packagist-raytech%2Fraytech--log--viewer-orange.svg" alt="Packagist"></a>
   <a href="https://php.net"><img src="https://img.shields.io/badge/php-%5E8.0-8892BF.svg" alt="PHP Version"></a>
   <a href="https://laravel.com"><img src="https://img.shields.io/badge/laravel-%5E8.0%20%7C%20%5E9.0%20%7C%20%5E10.0%20%7C%20%5E11.0%20%7C%20%5E12.0-FF2D20.svg" alt="Laravel"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License"></a>
 </p>
+
+---
+
+## 🌟 Key Features
+
+```
+┌────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ [>]  [ local.ERROR ]   2026-11-11 05:06:16   Call to undefined function str()           [7 frames]  📋 │
+├────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ ▼ Stack Exception: Call to undefined function str()                                                    │
+│   in E:\wamp\www\resembler\storage\framework\lsp-ca4445c6fefa61f6.php on line 353                      │
+│ ┌──────────────────────┬──────────────────────┬──────────────────────────────────────────────────────┐ │
+│ │ [Stack Trace (7)]    │ [Context JSON]       │ [Raw Log]                                            │ │
+│ └──────────────────────┴──────────────────────┴──────────────────────────────────────────────────────┘ │
+│   #0 E:\wamp\www\resembler\app\Http\Controllers\HomeController.php:42 -> renderView()                 │
+│   #1 E:\wamp\www\resembler\vendor\laravel\framework\src\Illuminate\Routing\Controller.php:54           │
+└────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+```
+
+- 📊 **Table-Style Header Group Rows (`header_group`)**:
+  - Each log entry is represented as a clean, single-line summary row.
+  - Displays **`log_type`** (e.g. `local.ERROR`, `production.WARNING`, `PHP Fatal error`), **`log_create_date`** (`2026-11-11 05:06:16`), and clean **`header_text`** (human-readable error description without JSON clutter).
+- 📂 **Click-to-Expand Body Content (`body_content`)**:
+  - Clicking anywhere on a header row smoothly opens the full error record.
+  - **Exception Card**: Exception class badge in red, error message, and exact location (`in <file> on line <line>`).
+  - **Stack Trace Frames**: Formatted frame-by-frame (`#0`, `#1`), file paths in blue, line numbers in orange, and method calls.
+  - **Context JSON Tab**: Formatted, readable JSON context.
+  - **Raw Log Tab**: Verbatim full log content with a one-click copy button.
+- 🔝 **Latest Logs on Top (Newest First by Default)**:
+  - Displays the newest log entries at the very top of the screen (`desc` order) so developers immediately see recent errors and events without scrolling to the bottom.
+  - One-click toolbar toggle to switch anytime between **Newest First** and **Oldest First**.
+  - Configurable via `default_order => 'desc'` in config or `.env`.
+- ⚡ **Zero Database Setup**:
+  - Does not require any database tables, migrations, models, or Redis queues. Works 100% directly from log files on disk.
+- 🚀 **Lightning Fast Chunked Tail Reader**:
+  - Handles multi-gigabyte log files in milliseconds without running out of PHP memory (`memory_limit`).
+- 🔍 **Auto-Detection for All Logs**:
+  - **Laravel Logs**: Automatically discovers all logs in `storage/logs/*.log`.
+  - **Server Logs**: Automatically detects PHP error logs (`ini_get('error_log')`), Apache (`bin/apache/*/logs`, `httpd`), Nginx, WAMP, MariaDB, MySQL, and Linux paths (`/var/log/*`).
+  - **Custom Log Files & Dirs**: Add any custom files or directories via configuration or `.env`.
+- 🖼️ **Consolidated Logo & Browser Tab Favicon**:
+  - Unified single logo asset located at `public/img/default_logo.jpg` (no duplicate files).
+  - Automatically rendered in the topbar brand header and embedded in the HTML `<head>` as the browser tab favicon icon (`rel="icon"`).
+  - Fully customizable via config (`'brand_logo'`) or `.env` (`LOG_VIEWER_LOGO`).
+- 🎨 **Modular External CSS & JS Assets**:
+  - Clean separation of concerns with dedicated stylesheets (`public/css/raytech-log-viewer.css`) and JavaScript logic (`public/js/raytech-log-viewer.js`).
+  - Built-in automatic asset sync: Controller automatically updates published assets whenever package files are newer.
+- 🔄 **Real-Time Live Auto-Refresh**:
+  - Seamless AJAX polling (5s, 10s, 30s, or manual) with zero page reload or screen flickering.
+- 🎯 **Smart Log Level Detection**:
+  - Detects `EMERGENCY`, `ALERT`, `CRITICAL`, `ERROR`, `WARNING`, `INFO`, `DEBUG`, and `TRACE`.
+  - Filter by severity tag with instant badge counts.
+- 🔎 **Instant Client-Side Search**:
+  - Search through thousands of lines with live keyword highlighting (<kbd>Ctrl</kbd> + <kbd>F</kbd>).
+  - Automatically expands matching collapsed entries when searching.
+- 🌓 **Dark / Light Mode**:
+  - Instant theme toggle with `localStorage` persistence.
+- 🛡️ **Flexible Security & Access Control**:
+  - Works with any middleware (`web`, `auth`, custom role guards).
+  - Supports programmatic closures (`RaytechLogViewer::auth(...)`) in your `AppServiceProvider`.
+- 📋 **Productivity Actions**:
+  - Download raw log file.
+  - View raw unformatted log in a new tab.
+  - Clear / truncate log file safely with confirmation dialog.
+  - Expand All / Collapse All button for bulk inspection.
 
 ---
 
@@ -52,40 +117,6 @@ php artisan raytech-log-viewer:install
 
 ---
 
-## 🌟 What Makes RayTech Log Viewer Special?
-
-```
-┌────────────────────────────────────────────────────────────────────────────────────────────────────────┐
-│ [>]  [ local.ERROR ]   2026-11-11 05:06:16   Call to undefined function str()           [7 frames]  📋 │
-├────────────────────────────────────────────────────────────────────────────────────────────────────────┤
-│ ▼ Stack Exception: Call to undefined function str()                                                    │
-│   in E:\wamp\www\resembler\storage\framework\lsp-ca4445c6fefa61f6.php on line 353                      │
-│ ┌──────────────────────┬──────────────────────┬──────────────────────────────────────────────────────┐ │
-│ │ [Stack Trace (7)]    │ [Context JSON]       │ [Raw Log]                                            │ │
-│ └──────────────────────┴──────────────────────┴──────────────────────────────────────────────────────┘ │
-│   #0 E:\wamp\www\resembler\app\Http\Controllers\HomeController.php:42 -> renderView()                 │
-│   #1 E:\wamp\www\resembler\vendor\laravel\framework\src\Illuminate\Routing\Controller.php:54           │
-└────────────────────────────────────────────────────────────────────────────────────────────────────────┘
-```
-
-1. **Header Group Table Layout**: Each log entry is a clean, single-row summary displaying:
-   - `log_type`: Tagged badge (`local.ERROR`, `production.WARNING`, `PHP Fatal error`, `INFO`, `DEBUG`).
-   - `log_create_date`: Exact timestamp (`2026-11-11 05:06:16`).
-   - `header_text`: The human-readable error description without raw JSON clutter.
-2. **Click-to-Expand Body Content**: Clicking on any header row smoothly slides open:
-   - **Exception Card**: Bold exception title, message, and exact file + line number.
-   - **Interactive Stack Trace**: Frame-by-frame (`#0`, `#1`), file paths highlighted in blue, line numbers in orange, and method calls.
-   - **Context Tab**: Pretty-printed JSON context data.
-   - **Raw Log Tab**: Verbatim full log content with a one-click copy button.
-3. **Latest Logs on Top (Newest First by Default)**: Shows your most recent errors immediately at the top of the screen (`desc` order). Toggle between **Newest First** and **Oldest First** with one click.
-4. **Zero Database Setup**: Zero migrations, zero tables, zero models, zero queues. Works 100% directly from disk log files.
-5. **Auto-Discovers All Server Logs**: Detects Laravel logs (`storage/logs/*.log`), PHP error logs (`ini_get('error_log')`), Apache, Nginx, WAMP, MariaDB, MySQL, and Linux system logs (`/var/log/*`).
-6. **Unified Brand Logo & Favicon**: Single logo at `public/img/default_logo.jpg` used in both topbar header and browser tab favicon.
-7. **Live Auto-Refresh**: Seamless AJAX polling (5s, 10s, 30s, or manual) with zero page flicker.
-8. **Dark / Light Mode**: Instant theme switch with persistent state.
-
----
-
 ## 📦 Installation & Setup Guide
 
 ### Method 1: Packagist Installation
@@ -101,7 +132,7 @@ php artisan raytech-log-viewer:install
 
 #### A. Command Line (Quickest)
 ```bash
-# Add public GitHub repository to your composer config
+# Add public GitHub repository to your composer config:
 composer config repositories.raytech-log-viewer vcs https://github.com/umesh240/log-viewer.git
 
 # Install latest code from main branch:
