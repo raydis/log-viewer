@@ -166,6 +166,7 @@ class RaytechLogViewerController extends Controller
         }
 
         $parsedLines = [];
+        $dateGroups = [];
         $stats = [
             'total' => 0,
             'error' => 0,
@@ -180,6 +181,7 @@ class RaytechLogViewerController extends Controller
             $rawLines = $this->fileManager->readTail($selectedFile['path'], $lineLimit, $maxBytes);
             $parsedData = $this->parser->parseLines($rawLines, $order);
             $parsedLines = $parsedData['lines'];
+            $dateGroups = $parsedData['date_groups'] ?? [];
             $stats = $parsedData['stats'];
         }
 
@@ -194,6 +196,7 @@ class RaytechLogViewerController extends Controller
                 'file' => $selectedFile,
                 'stats' => $stats,
                 'lines' => $parsedLines,
+                'date_groups' => $dateGroups,
                 'total_lines' => count($parsedLines),
                 'order' => $order,
             ]);
@@ -205,6 +208,7 @@ class RaytechLogViewerController extends Controller
             'serverLogs' => $serverLogs,
             'selectedFile' => $selectedFile,
             'parsedLines' => $parsedLines,
+            'dateGroups' => $dateGroups,
             'stats' => $stats,
             'lineLimit' => $lineLimit,
             'allowedLines' => $allowedLines,

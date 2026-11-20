@@ -77,6 +77,49 @@ class LogParser
     }
 
     /**
+     * Extract date part (YYYY-MM-DD) from timestamp.
+     *
+     * @param string|null $timestamp
+     * @return string|null
+     */
+    public function extractDate(?string $timestamp): ?string
+    {
+        if (empty($timestamp)) {
+            return null;
+        }
+
+        if (preg_match('/^(\d{4}-\d{2}-\d{2})/', $timestamp, $m)) {
+            return $m[1];
+        }
+
+        $time = strtotime($timestamp);
+        if ($time !== false) {
+            return date('Y-m-d', $time);
+        }
+
+        return null;
+    }
+
+    /**
+     * Extract time part (HH:MM:SS) from timestamp.
+     *
+     * @param string|null $timestamp
+     * @return string|null
+     */
+    public function extractTime(?string $timestamp): ?string
+    {
+        if (empty($timestamp)) {
+            return null;
+        }
+
+        if (preg_match('/(\d{2}:\d{2}:\d{2})/', $timestamp, $m)) {
+            return $m[1];
+        }
+
+        return $timestamp;
+    }
+
+    /**
      * Extract environment (e.g. local, production, staging) from line.
      *
      * @param string $line
@@ -91,51 +134,15 @@ class LogParser
     }
 
     /**
-     * Check if a line is a continuation line of a multi-line log entry.
-     *
-     * @param string $line
-     * @return bool
-     */
-    public function isContinuationLine(string $line): bool
-    {
-        // Indented lines (tabs or 2+ spaces at start) are continuation lines
-        if (preg_match('/^(\t|\s{2,})/', $line)) {
-            return true;
-        }
-
-        $trimmed = trim($line);
-
-        // Empty line in the middle of a log entry
-        if ($trimmed === '') {
-            return true;
-        }
-
-        // Stack trace frame (e.g. #0 /path/to/file.php(42): ...)
-        if (preg_match('/^#\d+\s+/', $trimmed)) {
-            return true;
-        }
-
-        // Common trace headers and exception markers
-        if (preg_match('/^(Stack trace:|\[stacktrace\]|\[previous exception\]|\{main\}|\.{3}\s*\d+\s*more|thrown in\b)/i', $trimmed)) {
-            return true;
-        }
-
-        // JSON or array data lines
-        if (preg_match('/^("[^"]+":|\{|\}|\[|\])/', $trimmed)) {
-            return true;
-        }
-
-        return false;
-    }
-
-    /**
-     * Extract a clean single-line short summary from the main header line.
-     * Strips timestamp, environment, error prefixes, and trailing JSON context.
+     * Extract the clean header message:
+     * - Strips timestamp and level prefix e.g. [2026-11-20 03:55:18] local.ERROR:
+     * - Strips trailing JSON context block (everything from '{' to the end of line)
+     * - Returns the exact clean error description to show in the header row.
      *
      * @param string $line
      * @return string
      */
-    public function extractShortText(string $line): string
+    public function extractHeaderMessage(string $line): string
     {
         $text = $line;
 
@@ -151,8 +158,13 @@ class LogParser
         // Strip server prefix e.g. [php:error] [pid 1234] [client 127.0.0.1:5678]
         $text = preg_replace('/^(\[[^\]]+\]\s*)+/', '', $text);
 
-        // Strip trailing JSON context if present e.g. {"userId":2025,...} or {"exception":"[object]..."}
+        // Extract content before the JSON context block (e.g. before ' {"exception":...' or ' {"userId":...')
         if (preg_match('/^(.*?)\s*(\{"(?:[^"]+)":.*\}\s*)$/s', $text, $jm)) {
+            $candidate = trim($jm[1]);
+            if ($candidate !== '') {
+                $text = $candidate;
+            }
+        } elseif (preg_match('/^(.*?)\s*(\{.*)$/s', $text, $jm)) {
             $candidate = trim($jm[1]);
             if ($candidate !== '') {
                 $text = $candidate;
@@ -166,6 +178,14 @@ class LogParser
         }
 
         return $text;
+    }
+
+    /**
+     * Backward-compatible alias for extractHeaderMessage.
+     */
+    public function extractShortText(string $line): string
+    {
+        return $this->extractHeaderMessage($line);
     }
 
     /**
@@ -254,7 +274,6 @@ class LogParser
     {
         $context = null;
 
-        // Check if there is JSON on the first line
         if (preg_match('/(\{"(?:[^"]+)":.*\})\s*$/s', $firstLine, $m)) {
             $decoded = json_decode($m[1], true);
             if (is_array($decoded)) {
@@ -262,7 +281,6 @@ class LogParser
             }
         }
 
-        // If not found or incomplete, look for {"...":...} in full text
         if ($context === null && preg_match('/(\{"[A-Za-z0-9_-]+":[\s\S]*?\})\n(?:\[stacktrace\]|#0|$)/s', $fullText, $m)) {
             $decoded = json_decode($m[1], true);
             if (is_array($decoded)) {
@@ -271,7 +289,6 @@ class LogParser
         }
 
         if ($context !== null) {
-            // Strip the large raw exception string from context view to keep it clean & readable
             if (isset($context['exception'])) {
                 unset($context['exception']);
             }
@@ -283,7 +300,8 @@ class LogParser
 
     /**
      * Parse raw lines into structured log entries.
-     * Supports multi-line grouping and ordering ('desc' for latest on top).
+     * All lines from one [timestamp] to the next [timestamp] are grouped into a single entry.
+     * Entries are ordered ('desc' by default for latest on top) and grouped by date.
      *
      * @param array $rawLines
      * @param string $order 'desc' (latest on top) or 'asc' (oldest first)
@@ -305,31 +323,48 @@ class LogParser
 
         foreach ($rawLines as $lineIdx => $rawLine) {
             $lineNum = $lineIdx + 1;
-            $isContinuation = ($currentEntry !== null) && $this->isContinuationLine($rawLine);
+            $timestamp = $this->extractTimestamp($rawLine);
+            $hasTimestamp = ($timestamp !== null);
 
-            if ($isContinuation) {
-                // Append line to current log entry
-                $currentEntry['lines'][] = $rawLine;
-            } else {
-                // Save previous entry if exists
+            // A line starts a new log entry ONLY if it begins with a timestamp!
+            // All subsequent lines (stack traces, SQL, multi-line exception messages, JSON context)
+            // belong to this log entry until the next timestamp line is reached.
+            if ($hasTimestamp) {
                 if ($currentEntry !== null) {
                     $entries[] = $this->finalizeEntry($currentEntry);
                 }
 
-                // Start new log entry
                 $level = $this->detectLogLevel($rawLine);
-                $timestamp = $this->extractTimestamp($rawLine);
                 $environment = $this->extractEnvironment($rawLine);
-                $shortText = $this->extractShortText($rawLine);
+                $message = $this->extractHeaderMessage($rawLine);
+                $date = $this->extractDate($timestamp);
+                $time = $this->extractTime($timestamp);
 
                 $currentEntry = [
                     'num' => $lineNum,
                     'level' => $level,
                     'timestamp' => $timestamp,
+                    'date' => $date,
+                    'time' => $time,
                     'environment' => $environment,
-                    'short_text' => $shortText,
+                    'message' => $message,
                     'lines' => [$rawLine],
                 ];
+            } else {
+                if ($currentEntry !== null) {
+                    $currentEntry['lines'][] = $rawLine;
+                } else {
+                    $currentEntry = [
+                        'num' => $lineNum,
+                        'level' => $this->detectLogLevel($rawLine),
+                        'timestamp' => null,
+                        'date' => null,
+                        'time' => null,
+                        'environment' => null,
+                        'message' => trim($rawLine),
+                        'lines' => [$rawLine],
+                    ];
+                }
             }
         }
 
@@ -352,8 +387,49 @@ class LogParser
             $entries = array_reverse($entries);
         }
 
+        // Group entries by Date
+        $dateGroups = [];
+        foreach ($entries as $e) {
+            $dateKey = $e['date'] ?: 'Other';
+            if (!isset($dateGroups[$dateKey])) {
+                $dateFormatted = 'Unspecified Date';
+                if ($dateKey !== 'Other' && strtotime($dateKey)) {
+                    $time = strtotime($dateKey);
+                    $isToday = (date('Y-m-d') === $dateKey);
+                    $isYesterday = (date('Y-m-d', strtotime('-1 day')) === $dateKey);
+                    if ($isToday) {
+                        $dateFormatted = 'Today — ' . date('F j, Y', $time);
+                    } elseif ($isYesterday) {
+                        $dateFormatted = 'Yesterday — ' . date('F j, Y', $time);
+                    } else {
+                        $dateFormatted = date('l, F j, Y', $time);
+                    }
+                }
+
+                $dateGroups[$dateKey] = [
+                    'date' => $dateKey,
+                    'date_formatted' => $dateFormatted,
+                    'date_short' => $dateKey,
+                    'total' => 0,
+                    'errors' => 0,
+                    'warnings' => 0,
+                    'entries' => [],
+                ];
+            }
+
+            $dateGroups[$dateKey]['total']++;
+            if ($e['level'] === 'error') {
+                $dateGroups[$dateKey]['errors']++;
+            }
+            if ($e['level'] === 'warning') {
+                $dateGroups[$dateKey]['warnings']++;
+            }
+            $dateGroups[$dateKey]['entries'][] = $e;
+        }
+
         return [
             'lines' => $entries,
+            'date_groups' => array_values($dateGroups),
             'stats' => $stats,
             'order' => $order,
         ];
@@ -389,25 +465,24 @@ class LogParser
         $context = $this->parseContext($firstLine, $fullText);
         $contextJson = !empty($context) ? json_encode($context, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) : null;
 
-        // If exception was parsed, enhance short_text if needed
-        $shortText = $entry['short_text'];
-        if ($exception && !empty($exception['class_short'])) {
-            $errorType = $exception['class_short'];
-        } else {
-            $errorType = null;
-        }
+        $errorType = ($exception && !empty($exception['class_short'])) ? $exception['class_short'] : null;
+
+        $message = $entry['message'] ?? $this->extractHeaderMessage($firstLine);
 
         // Determine if this entry has details to expand
-        $hasDetails = ($lineCount > 1) || ($exception !== null) || (!empty($stackFrames)) || (!empty($context)) || (mb_strlen($firstLine) > 110);
+        $hasDetails = ($lineCount > 1) || ($exception !== null) || (!empty($stackFrames)) || (!empty($context)) || (mb_strlen($firstLine) > 100);
 
         return [
             'id' => 'log-entry-' . $entry['num'],
             'num' => $entry['num'],
             'level' => $level,
             'timestamp' => $entry['timestamp'],
+            'date' => $entry['date'],
+            'time' => $entry['time'],
             'environment' => $entry['environment'] ?? null,
             'error_type' => $errorType,
-            'short_text' => $shortText,
+            'message' => $message,
+            'short_text' => $message,
             'full_text' => $fullText,
             'exception' => $exception,
             'stack_frames' => $stackFrames,

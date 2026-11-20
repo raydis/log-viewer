@@ -370,6 +370,13 @@
             }
         });
 
+        // Hide date groups that have no visible entries
+        const dateGroups = document.querySelectorAll('.log-date-group');
+        dateGroups.forEach(group => {
+            const hasVisible = Array.from(group.querySelectorAll('.log-entry')).some(e => e.style.display !== 'none');
+            group.style.display = hasVisible ? '' : 'none';
+        });
+
         if (searchCountBadge && searchTerm.length > 0) {
             searchCountBadge.textContent = matchCount + ' ' + (matchCount === 1 ? 'match' : 'matches');
             searchCountBadge.style.display = 'inline-flex';
@@ -502,13 +509,24 @@
         }
 
         // Build HTML for structured entries
-        let html = '<div id="linesWrapper">';
-        data.lines.forEach(entry => {
-            const escapedShort = escapeHtml(entry.short_text || entry.text || '');
+        function buildEntryHtml(entry) {
+            const escapedShort = escapeHtml(entry.message || entry.short_text || entry.text || '');
             const escapedFull = escapeHtml(entry.full_text || entry.text || '');
-            const hasDetails = Boolean(entry.has_details);
+            const hasDetails = true;
+
+            let levelIcon = '<i class="fa fa-terminal log-level-icon icon-default" title="Log"></i>';
+            if (entry.level === 'error') {
+                levelIcon = '<i class="fa fa-times-circle log-level-icon icon-error" title="Error"></i>';
+            } else if (entry.level === 'warning') {
+                levelIcon = '<i class="fa fa-exclamation-triangle log-level-icon icon-warning" title="Warning"></i>';
+            } else if (entry.level === 'info') {
+                levelIcon = '<i class="fa fa-info-circle log-level-icon icon-info" title="Info"></i>';
+            } else if (entry.level === 'debug') {
+                levelIcon = '<i class="fa fa-bug log-level-icon icon-debug" title="Debug"></i>';
+            }
+
             const levelTag = ['error', 'warning', 'info', 'debug'].includes(entry.level)
-                ? `<span class="level-tag tag-${entry.level}">${entry.level}</span>`
+                ? `<span class="level-tag tag-${entry.level}">${entry.level.toUpperCase()}</span>`
                 : '';
             const errorTypeTag = entry.error_type
                 ? `<span class="error-type-tag" title="${entry.exception ? escapeHtml(entry.exception.class) : ''}">${escapeHtml(entry.error_type)}</span>`
@@ -516,12 +534,10 @@
             const envTag = entry.environment
                 ? `<span class="env-tag">${escapeHtml(entry.environment)}</span>`
                 : '';
-            const timeTag = entry.timestamp
-                ? `<span class="entry-time" title="Log Timestamp"><i class="far fa-clock"></i> ${escapeHtml(entry.timestamp)}</span>`
+            const timeTag = (entry.time || entry.timestamp)
+                ? `<span class="entry-time" title="${escapeHtml(entry.timestamp || '')}"><i class="far fa-clock"></i> ${escapeHtml(entry.time || entry.timestamp)}</span>`
                 : '';
-            const chevron = hasDetails
-                ? '<i class="fa fa-chevron-right expand-chevron"></i>'
-                : '<span class="chevron-placeholder"></span>';
+            const chevron = '<i class="fa fa-chevron-right expand-chevron"></i>';
 
             let countBadge = '';
             if (entry.frames_count && entry.frames_count > 0) {
@@ -547,85 +563,82 @@
             }
 
             // Build tabs header and panes
-            let tabsHeaderHtml = '';
-            let tabsPanesHtml = '';
-            if (hasDetails) {
-                const hasFrames = Array.isArray(entry.stack_frames) && entry.stack_frames.length > 0;
-                const hasContext = Boolean(entry.context_json);
+            const hasFrames = Array.isArray(entry.stack_frames) && entry.stack_frames.length > 0;
+            const hasContext = Boolean(entry.context_json);
 
-                tabsHeaderHtml = `
-                    <div class="details-tabs-header">
-                        ${hasFrames ? `
-                            <button type="button" class="tab-link active" data-tab="trace">
-                                <i class="fa fa-stream"></i> Stack Trace <span class="tab-count">(${entry.stack_frames.length})</span>
-                            </button>
-                        ` : ''}
-                        ${hasContext ? `
-                            <button type="button" class="tab-link ${!hasFrames ? 'active' : ''}" data-tab="context">
-                                <i class="fa fa-database"></i> Context
-                            </button>
-                        ` : ''}
-                        <button type="button" class="tab-link ${!hasFrames && !hasContext ? 'active' : ''}" data-tab="raw">
-                            <i class="fa fa-code"></i> Raw Log
+            const tabsHeaderHtml = `
+                <div class="details-tabs-header">
+                    ${hasFrames ? `
+                        <button type="button" class="tab-link active" data-tab="trace">
+                            <i class="fa fa-stream"></i> Stack Trace <span class="tab-count">(${entry.stack_frames.length})</span>
                         </button>
-                        <div class="tab-actions-right">
-                            <button type="button" class="btn-compact btn-copy-full" data-copy-text="${encodeURIComponent(entry.full_text || entry.text || '')}" title="Copy full content">
-                                <i class="far fa-copy"></i> Copy Full Log
-                            </button>
-                        </div>
+                    ` : ''}
+                    ${hasContext ? `
+                        <button type="button" class="tab-link ${!hasFrames ? 'active' : ''}" data-tab="context">
+                            <i class="fa fa-database"></i> Context
+                        </button>
+                    ` : ''}
+                    <button type="button" class="tab-link ${!hasFrames && !hasContext ? 'active' : ''}" data-tab="raw">
+                        <i class="fa fa-code"></i> Raw Log
+                    </button>
+                    <div class="tab-actions-right">
+                        <button type="button" class="btn-compact btn-copy-full" data-copy-text="${encodeURIComponent(entry.full_text || entry.text || '')}" title="Copy full content">
+                            <i class="far fa-copy"></i> Copy Full Log
+                        </button>
                     </div>
-                `;
+                </div>
+            `;
 
-                // Frames pane
-                let framesHtml = '';
-                if (hasFrames) {
-                    framesHtml = '<div class="stack-trace-list">';
-                    entry.stack_frames.forEach(frame => {
-                        framesHtml += `
-                            <div class="stack-frame">
-                                <span class="frame-num">#${frame.number}</span>
-                                <div class="frame-body">
-                                    ${frame.file ? `
-                                        <div class="frame-file-line">
-                                            <span class="frame-file">${escapeHtml(frame.file)}</span>${frame.line ? `<span class="frame-colon">:</span><span class="frame-line">${frame.line}</span>` : ''}
-                                        </div>
-                                    ` : ''}
-                                    <div class="frame-call"><code>${escapeHtml(frame.call)}</code></div>
-                                </div>
+            // Frames pane
+            let framesHtml = '';
+            if (hasFrames) {
+                framesHtml = '<div class="stack-trace-list">';
+                entry.stack_frames.forEach(frame => {
+                    framesHtml += `
+                        <div class="stack-frame">
+                            <span class="frame-num">#${frame.number}</span>
+                            <div class="frame-body">
+                                ${frame.file ? `
+                                    <div class="frame-file-line">
+                                        <span class="frame-file">${escapeHtml(frame.file)}</span>${frame.line ? `<span class="frame-colon">:</span><span class="frame-line">${frame.line}</span>` : ''}
+                                    </div>
+                                ` : ''}
+                                <div class="frame-call"><code>${escapeHtml(frame.call)}</code></div>
                             </div>
-                        `;
-                    });
-                    framesHtml += '</div>';
-                }
-
-                // Context pane
-                const contextHtml = hasContext
-                    ? `<pre class="context-json-code"><code>${escapeHtml(entry.context_json)}</code></pre>`
-                    : '';
-
-                // Raw pane
-                const rawHtml = `<pre class="full-log-code"><code>${escapedFull}</code></pre>`;
-
-                tabsPanesHtml = `
-                    <div class="details-tab-panes">
-                        ${hasFrames ? `<div class="tab-pane active" data-pane="trace">${framesHtml}</div>` : ''}
-                        ${hasContext ? `<div class="tab-pane ${!hasFrames ? 'active' : ''}" data-pane="context">${contextHtml}</div>` : ''}
-                        <div class="tab-pane ${!hasFrames && !hasContext ? 'active' : ''}" data-pane="raw">${rawHtml}</div>
-                    </div>
-                `;
+                        </div>
+                    `;
+                });
+                framesHtml += '</div>';
             }
 
-            html += `
-                <div class="log-entry level-${entry.level} ${hasDetails ? 'has-details' : ''}" 
+            // Context pane
+            const contextHtml = hasContext
+                ? `<pre class="context-json-code"><code>${escapeHtml(entry.context_json)}</code></pre>`
+                : '';
+
+            // Raw pane
+            const rawHtml = `<pre class="full-log-code"><code>${escapedFull}</code></pre>`;
+
+            const tabsPanesHtml = `
+                <div class="details-tab-panes">
+                    ${hasFrames ? `<div class="tab-pane active" data-pane="trace">${framesHtml}</div>` : ''}
+                    ${hasContext ? `<div class="tab-pane ${!hasFrames ? 'active' : ''}" data-pane="context">${contextHtml}</div>` : ''}
+                    <div class="tab-pane ${!hasFrames && !hasContext ? 'active' : ''}" data-pane="raw">${rawHtml}</div>
+                </div>
+            `;
+
+            return `
+                <div class="log-entry level-${entry.level} has-details" 
                      id="${entry.id || ('log-entry-' + entry.num)}" 
                      data-level="${entry.level}" 
                      data-num="${entry.num}"
-                     data-has-details="${hasDetails ? '1' : '0'}">
+                     data-has-details="1">
                     
-                    <div class="entry-summary" title="${hasDetails ? 'Click to expand / collapse full log details' : 'Click to view full content'}">
+                    <div class="entry-summary" title="Click to view full content">
                         <div class="entry-left">
                             ${chevron}
                             <span class="entry-num">${entry.num}</span>
+                            ${levelIcon}
                             ${levelTag}
                             ${errorTypeTag}
                             ${envTag}
@@ -642,16 +655,48 @@
                         </div>
                     </div>
 
-                    ${hasDetails ? `
-                        <div class="entry-details" style="display: none;">
-                            ${exceptionHtml}
-                            ${tabsHeaderHtml}
-                            ${tabsPanesHtml}
-                        </div>
-                    ` : ''}
+                    <div class="entry-details" style="display: none;">
+                        ${exceptionHtml}
+                        ${tabsHeaderHtml}
+                        ${tabsPanesHtml}
+                    </div>
                 </div>
             `;
-        });
+        }
+
+        let html = '<div id="linesWrapper">';
+        if (Array.isArray(data.date_groups) && data.date_groups.length > 0) {
+            data.date_groups.forEach(group => {
+                html += `
+                    <div class="log-date-group" data-date="${escapeHtml(group.date)}">
+                        <div class="date-group-header">
+                            <div class="date-header-left">
+                                <i class="far fa-calendar-alt date-icon"></i>
+                                <span class="date-title">${escapeHtml(group.date_formatted)}</span>
+                            </div>
+                            <div class="date-header-right">
+                                <span class="date-badge badge-total">${group.total} ${group.total === 1 ? 'log' : 'logs'}</span>
+                                ${group.errors > 0 ? `<span class="date-badge badge-errors">${group.errors} ${group.errors === 1 ? 'error' : 'errors'}</span>` : ''}
+                                ${group.warnings > 0 ? `<span class="date-badge badge-warnings">${group.warnings} ${group.warnings === 1 ? 'warning' : 'warnings'}</span>` : ''}
+                            </div>
+                        </div>
+                        <div class="date-group-entries">
+                `;
+                if (Array.isArray(group.entries)) {
+                    group.entries.forEach(entry => {
+                        html += buildEntryHtml(entry);
+                    });
+                }
+                html += `
+                        </div>
+                    </div>
+                `;
+            });
+        } else if (Array.isArray(data.lines)) {
+            data.lines.forEach(entry => {
+                html += buildEntryHtml(entry);
+            });
+        }
         html += '</div>';
 
         viewport.innerHTML = html;
