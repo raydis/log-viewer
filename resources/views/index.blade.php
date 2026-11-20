@@ -150,6 +150,18 @@
         </div>
 
         <div class="filter-group">
+            <!-- Sort Order Toggle (Latest on top) -->
+            <button type="button" class="btn-compact" id="btnToggleOrder" title="Toggle Newest First / Oldest First">
+                <i class="fa fa-sort-amount-{{ ($order ?? 'desc') === 'desc' ? 'down' : 'up' }}" id="iconOrder"></i> 
+                <span id="lblOrder">{{ ($order ?? 'desc') === 'desc' ? 'Newest First' : 'Oldest First' }}</span>
+            </button>
+
+            <!-- Expand / Collapse All Details -->
+            <button type="button" class="btn-compact" id="btnToggleExpandAll" title="Expand or Collapse all log details">
+                <i class="fa fa-expand-alt" id="iconExpandAll"></i> 
+                <span id="lblExpandAll">Expand All</span>
+            </button>
+
             <!-- Lines Limit -->
             <label style="font-size: 11.5px; color: var(--text-muted); display: flex; align-items: center; gap: 4px; margin: 0;">
                 Lines:
@@ -289,15 +301,65 @@
                     </div>
                 @else
                     <div id="linesWrapper">
-                        @foreach($parsedLines as $line)
-                            <div class="log-line level-{{ $line['level'] }}" data-level="{{ $line['level'] }}" data-num="{{ $line['num'] }}">
-                                <div class="line-num">{{ $line['num'] }}</div>
-                                <div class="line-content">
-                                    @if(in_array($line['level'], ['error', 'warning', 'info', 'debug']))
-                                        <span class="level-tag">{{ $line['level'] }}</span>
-                                    @endif
-                                    <span class="line-text">{!! htmlspecialchars($line['text'], ENT_QUOTES, 'UTF-8') !!}</span>
+                        @foreach($parsedLines as $entry)
+                            <div class="log-entry level-{{ $entry['level'] }} {{ !empty($entry['has_details']) ? 'has-details' : '' }}" 
+                                 id="{{ $entry['id'] ?? ('log-entry-' . $entry['num']) }}" 
+                                 data-level="{{ $entry['level'] }}" 
+                                 data-num="{{ $entry['num'] }}"
+                                 data-has-details="{{ !empty($entry['has_details']) ? '1' : '0' }}">
+                                
+                                <div class="entry-summary" title="{{ !empty($entry['has_details']) ? 'Click to expand / collapse full log details' : 'Click to view full content' }}">
+                                    <div class="entry-left">
+                                        @if(!empty($entry['has_details']))
+                                            <i class="fa fa-chevron-right expand-chevron"></i>
+                                        @else
+                                            <span class="chevron-placeholder"></span>
+                                        @endif
+                                        <span class="entry-num">{{ $entry['num'] }}</span>
+                                        @if(in_array($entry['level'], ['error', 'warning', 'info', 'debug']))
+                                            <span class="level-tag tag-{{ $entry['level'] }}">{{ $entry['level'] }}</span>
+                                        @endif
+                                        @if(!empty($entry['timestamp']))
+                                            <span class="entry-time" title="Log Timestamp"><i class="far fa-clock"></i> {{ $entry['timestamp'] }}</span>
+                                        @endif
+                                    </div>
+
+                                    <div class="entry-msg">
+                                        <span class="entry-short-text">{{ $entry['short_text'] ?? $entry['text'] ?? '' }}</span>
+                                    </div>
+
+                                    <div class="entry-right">
+                                        @if(!empty($entry['lines_count']) && $entry['lines_count'] > 1)
+                                            <span class="badge-lines" title="{{ $entry['lines_count'] }} total lines"><i class="fa fa-layer-group"></i> +{{ $entry['lines_count'] - 1 }}</span>
+                                        @endif
+                                        <button type="button" class="btn-entry-copy" title="Copy this log entry" data-copy-text="{{ urlencode($entry['full_text'] ?? $entry['text'] ?? '') }}">
+                                            <i class="far fa-copy"></i>
+                                        </button>
+                                    </div>
                                 </div>
+
+                                @if(!empty($entry['has_details']))
+                                    <div class="entry-details" style="display: none;">
+                                        <div class="details-toolbar">
+                                            <div class="details-meta">
+                                                <span><i class="fa fa-info-circle"></i> Line #{{ $entry['num'] }}</span>
+                                                @if(!empty($entry['timestamp']))
+                                                    <span><i class="far fa-clock"></i> {{ $entry['timestamp'] }}</span>
+                                                @endif
+                                                <span class="badge-level-mini level-{{ $entry['level'] }}">{{ strtoupper($entry['level']) }}</span>
+                                                <span>{{ $entry['lines_count'] ?? 1 }} lines</span>
+                                            </div>
+                                            <div class="details-actions">
+                                                <button type="button" class="btn-compact btn-copy-full" data-copy-text="{{ urlencode($entry['full_text'] ?? $entry['text'] ?? '') }}" title="Copy full content">
+                                                    <i class="far fa-copy"></i> Copy Full Log
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <div class="details-content">
+                                            <pre class="full-log-code"><code>{!! htmlspecialchars($entry['full_text'] ?? $entry['text'] ?? '', ENT_QUOTES, 'UTF-8') !!}</code></pre>
+                                        </div>
+                                    </div>
+                                @endif
                             </div>
                         @endforeach
                     </div>
@@ -346,6 +408,7 @@
             activeKey: @json($selectedFile ? $selectedFile['key'] : ''),
             activeName: @json($selectedFile ? $selectedFile['name'] : ''),
             defaultTheme: @json($themeConfig['default_mode'] ?? 'light'),
+            order: @json($order ?? 'desc'),
             indexUrl: @json(route($indexRoute)),
             clearUrl: @json(route($clearRoute)),
             csrfToken: @json(csrf_token())

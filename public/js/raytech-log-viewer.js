@@ -8,6 +8,7 @@
     let activeKey = config.activeKey || '';
     let activeName = config.activeName || '';
     let activeLevelFilter = 'all';
+    let activeOrder = config.order || 'desc';
     let autoRefreshInterval = null;
 
     const indexUrl = config.indexUrl || '';
@@ -29,9 +30,9 @@
     const loadingOverlay = document.getElementById('loadingOverlay');
     const sidebar = document.getElementById('sidebarFiles');
 
-    // Scroll to bottom on initial load so recent logs are immediately visible
+    // On initial load, keep scroll at top where newest logs appear
     if (viewport) {
-        viewport.scrollTop = viewport.scrollHeight;
+        viewport.scrollTop = 0;
     }
 
     // Theme Management
@@ -116,6 +117,108 @@
         });
     }
 
+    // Order Toggle Button (Newest First / Oldest First)
+    const btnToggleOrder = document.getElementById('btnToggleOrder');
+    if (btnToggleOrder) {
+        btnToggleOrder.addEventListener('click', function() {
+            activeOrder = activeOrder === 'desc' ? 'asc' : 'desc';
+            updateOrderButton();
+            reloadLogs(false);
+        });
+    }
+
+    function updateOrderButton() {
+        const icon = document.getElementById('iconOrder');
+        const text = document.getElementById('lblOrder');
+        if (activeOrder === 'desc') {
+            if (icon) icon.className = 'fa fa-sort-amount-down';
+            if (text) text.textContent = 'Newest First';
+        } else {
+            if (icon) icon.className = 'fa fa-sort-amount-up';
+            if (text) text.textContent = 'Oldest First';
+        }
+    }
+
+    // Expand All / Collapse All Toggle Button
+    const btnToggleExpandAll = document.getElementById('btnToggleExpandAll');
+    if (btnToggleExpandAll) {
+        btnToggleExpandAll.addEventListener('click', function() {
+            const allEntries = document.querySelectorAll('.log-entry.has-details');
+            const anyCollapsed = Array.from(allEntries).some(e => !e.classList.contains('expanded'));
+
+            allEntries.forEach(entry => {
+                const details = entry.querySelector('.entry-details');
+                if (!details) return;
+
+                if (anyCollapsed) {
+                    entry.classList.add('expanded');
+                    details.style.display = 'block';
+                } else {
+                    entry.classList.remove('expanded');
+                    details.style.display = 'none';
+                }
+            });
+
+            updateExpandAllLabel();
+        });
+    }
+
+    function updateExpandAllLabel() {
+        const icon = document.getElementById('iconExpandAll');
+        const text = document.getElementById('lblExpandAll');
+        const allEntries = document.querySelectorAll('.log-entry.has-details');
+        const allExpanded = allEntries.length > 0 && Array.from(allEntries).every(e => e.classList.contains('expanded'));
+
+        if (allExpanded) {
+            if (icon) icon.className = 'fa fa-compress-alt';
+            if (text) text.textContent = 'Collapse All';
+        } else {
+            if (icon) icon.className = 'fa fa-expand-alt';
+            if (text) text.textContent = 'Expand All';
+        }
+    }
+
+    // Delegated click handler on viewport for log entries (Expand/Collapse & Copy)
+    if (viewport) {
+        viewport.addEventListener('click', function(e) {
+            // 1. Copy button click (summary or details)
+            const copyBtn = e.target.closest('.btn-entry-copy, .btn-copy-full');
+            if (copyBtn) {
+                e.stopPropagation();
+                const rawText = copyBtn.getAttribute('data-copy-text');
+                const textToCopy = rawText ? decodeURIComponent(rawText) : '';
+                if (textToCopy) {
+                    navigator.clipboard.writeText(textToCopy).then(() => {
+                        showToast('Log copied to clipboard', 'success');
+                    }).catch(() => {
+                        showToast('Failed to copy', 'error');
+                    });
+                }
+                return;
+            }
+
+            // 2. Click on summary row -> toggle details expansion
+            const summary = e.target.closest('.entry-summary');
+            if (summary) {
+                const entry = summary.closest('.log-entry');
+                if (!entry) return;
+
+                const details = entry.querySelector('.entry-details');
+                if (details) {
+                    const isExpanded = entry.classList.contains('expanded');
+                    if (isExpanded) {
+                        entry.classList.remove('expanded');
+                        details.style.display = 'none';
+                    } else {
+                        entry.classList.add('expanded');
+                        details.style.display = 'block';
+                    }
+                    updateExpandAllLabel();
+                }
+            }
+        });
+    }
+
     // Filter Sidebar Files
     const filterFilesInput = document.getElementById('filterFilesInput');
     if (filterFilesInput) {
@@ -170,7 +273,7 @@
         if (!searchInput) return;
         const searchTerm = searchInput.value.trim();
         const termLower = searchTerm.toLowerCase();
-        const lines = document.querySelectorAll('.log-line');
+        const entries = document.querySelectorAll('.log-entry, .log-line');
 
         if (searchTerm.length > 0) {
             if (searchClearBtn) searchClearBtn.style.display = 'block';
@@ -182,11 +285,17 @@
         let matchCount = 0;
         let visibleCount = 0;
 
-        lines.forEach(line => {
-            const level = line.getAttribute('data-level');
-            const textSpan = line.querySelector('.line-text');
-            if (!textSpan) return;
-            const originalText = textSpan.textContent;
+        entries.forEach(entry => {
+            const level = entry.getAttribute('data-level');
+            const shortTextEl = entry.querySelector('.entry-short-text') || entry.querySelector('.line-text');
+            const codeEl = entry.querySelector('.full-log-code code');
+
+            const shortText = shortTextEl ? (shortTextEl.getAttribute('data-original') || shortTextEl.textContent) : '';
+            if (shortTextEl && !shortTextEl.getAttribute('data-original')) {
+                shortTextEl.setAttribute('data-original', shortText);
+            }
+
+            const fullText = codeEl ? codeEl.textContent : shortText;
 
             // Level match
             let levelMatch = false;
@@ -202,27 +311,41 @@
                 levelMatch = true;
             }
 
-            // Search match
+            // Search match across short text or full content
             let searchMatch = true;
             if (searchTerm.length > 0) {
-                const idx = originalText.toLowerCase().indexOf(termLower);
-                if (idx !== -1) {
+                const inShort = shortText.toLowerCase().includes(termLower);
+                const inFull = fullText.toLowerCase().includes(termLower);
+
+                if (inShort || inFull) {
                     searchMatch = true;
                     matchCount++;
-                    highlightMatch(textSpan, originalText, searchTerm);
+
+                    if (shortTextEl) {
+                        highlightMatch(shortTextEl, shortText, searchTerm);
+                    }
+
+                    // If match is inside details, auto-expand so user can inspect it
+                    if (inFull && !inShort) {
+                        const details = entry.querySelector('.entry-details');
+                        if (details) {
+                            entry.classList.add('expanded');
+                            details.style.display = 'block';
+                        }
+                    }
                 } else {
                     searchMatch = false;
-                    textSpan.textContent = originalText;
+                    if (shortTextEl) shortTextEl.textContent = shortText;
                 }
             } else {
-                textSpan.textContent = originalText;
+                if (shortTextEl) shortTextEl.textContent = shortText;
             }
 
             if (levelMatch && searchMatch) {
-                line.style.display = 'flex';
+                entry.style.display = '';
                 visibleCount++;
             } else {
-                line.style.display = 'none';
+                entry.style.display = 'none';
             }
         });
 
@@ -294,7 +417,7 @@
         }
 
         const separator = indexUrl.includes('?') ? '&' : '?';
-        const url = `${indexUrl}${separator}key=${encodeURIComponent(activeKey)}&lines=${encodeURIComponent(lineLimit)}&ajax=1`;
+        const url = `${indexUrl}${separator}key=${encodeURIComponent(activeKey)}&lines=${encodeURIComponent(lineLimit)}&order=${encodeURIComponent(activeOrder)}&ajax=1`;
 
         fetch(url, {
             headers: {
@@ -357,58 +480,111 @@
             return;
         }
 
-        // Build HTML
+        // Build HTML for structured entries
         let html = '<div id="linesWrapper">';
-        data.lines.forEach(l => {
-            const escaped = escapeHtml(l.text);
-            const tag = ['error', 'warning', 'info', 'debug'].includes(l.level) 
-                ? `<span class="level-tag">${l.level}</span>` 
+        data.lines.forEach(entry => {
+            const escapedShort = escapeHtml(entry.short_text || entry.text || '');
+            const escapedFull = escapeHtml(entry.full_text || entry.text || '');
+            const hasDetails = Boolean(entry.has_details);
+            const levelTag = ['error', 'warning', 'info', 'debug'].includes(entry.level)
+                ? `<span class="level-tag tag-${entry.level}">${entry.level}</span>`
                 : '';
+            const timeTag = entry.timestamp
+                ? `<span class="entry-time" title="Log Timestamp"><i class="far fa-clock"></i> ${escapeHtml(entry.timestamp)}</span>`
+                : '';
+            const chevron = hasDetails
+                ? '<i class="fa fa-chevron-right expand-chevron"></i>'
+                : '<span class="chevron-placeholder"></span>';
+            const linesBadge = (entry.lines_count && entry.lines_count > 1)
+                ? `<span class="badge-lines" title="${entry.lines_count} lines"><i class="fa fa-layer-group"></i> +${entry.lines_count - 1}</span>`
+                : '';
+
             html += `
-                <div class="log-line level-${l.level}" data-level="${l.level}" data-num="${l.num}">
-                    <div class="line-num">${l.num}</div>
-                    <div class="line-content">
-                        ${tag}
-                        <span class="line-text">${escaped}</span>
+                <div class="log-entry level-${entry.level} ${hasDetails ? 'has-details' : ''}" 
+                     id="${entry.id || ('log-entry-' + entry.num)}" 
+                     data-level="${entry.level}" 
+                     data-num="${entry.num}"
+                     data-has-details="${hasDetails ? '1' : '0'}">
+                    
+                    <div class="entry-summary" title="${hasDetails ? 'Click to expand / collapse full log details' : 'Click to view full content'}">
+                        <div class="entry-left">
+                            ${chevron}
+                            <span class="entry-num">${entry.num}</span>
+                            ${levelTag}
+                            ${timeTag}
+                        </div>
+                        <div class="entry-msg">
+                            <span class="entry-short-text">${escapedShort}</span>
+                        </div>
+                        <div class="entry-right">
+                            ${linesBadge}
+                            <button type="button" class="btn-entry-copy" title="Copy this log entry" data-copy-text="${encodeURIComponent(entry.full_text || entry.text || '')}">
+                                <i class="far fa-copy"></i>
+                            </button>
+                        </div>
                     </div>
+
+                    ${hasDetails ? `
+                        <div class="entry-details" style="display: none;">
+                            <div class="details-toolbar">
+                                <div class="details-meta">
+                                    <span><i class="fa fa-info-circle"></i> Line #${entry.num}</span>
+                                    ${entry.timestamp ? `<span><i class="far fa-clock"></i> ${escapeHtml(entry.timestamp)}</span>` : ''}
+                                    <span class="badge-level-mini level-${entry.level}">${entry.level.toUpperCase()}</span>
+                                    <span>${entry.lines_count || 1} lines</span>
+                                </div>
+                                <div class="details-actions">
+                                    <button type="button" class="btn-compact btn-copy-full" data-copy-text="${encodeURIComponent(entry.full_text || entry.text || '')}" title="Copy full content">
+                                        <i class="far fa-copy"></i> Copy Full Log
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="details-content">
+                                <pre class="full-log-code"><code>${escapedFull}</code></pre>
+                            </div>
+                        </div>
+                    ` : ''}
                 </div>
             `;
         });
         html += '</div>';
 
-        const wasAtBottom = (viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight) < 40;
         viewport.innerHTML = html;
 
-        applyFilters();
-
-        if (wasAtBottom) {
-            viewport.scrollTop = viewport.scrollHeight;
+        // When order is newest first ('desc'), stay at top; otherwise stay at bottom
+        if (activeOrder === 'desc') {
+            viewport.scrollTop = 0;
         }
+
+        applyFilters();
+        updateExpandAllLabel();
     }
 
     function escapeHtml(text) {
         const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
-        return text.replace(/[&<>"']/g, m => map[m]);
+        return String(text).replace(/[&<>"']/g, m => map[m]);
     }
 
-    // Copy to Clipboard
+    // Copy to Clipboard (all visible lines)
     const btnCopy = document.getElementById('btnCopyLog');
     if (btnCopy) {
         btnCopy.addEventListener('click', function() {
-            const visibleLines = Array.from(document.querySelectorAll('.log-line'))
-                .filter(l => l.style.display !== 'none')
-                .map(l => {
-                    const textEl = l.querySelector('.line-text');
+            const visibleEntries = Array.from(document.querySelectorAll('.log-entry, .log-line'))
+                .filter(el => el.style.display !== 'none')
+                .map(el => {
+                    const code = el.querySelector('.full-log-code code');
+                    if (code) return code.textContent;
+                    const textEl = el.querySelector('.entry-short-text') || el.querySelector('.line-text');
                     return textEl ? textEl.textContent : '';
                 })
                 .join('\n');
 
-            if (!visibleLines) {
+            if (!visibleEntries) {
                 showToast('No lines to copy', 'error');
                 return;
             }
 
-            navigator.clipboard.writeText(visibleLines).then(() => {
+            navigator.clipboard.writeText(visibleEntries).then(() => {
                 showToast('Copied visible logs to clipboard', 'success');
             }).catch(() => {
                 showToast('Clipboard access denied', 'error');

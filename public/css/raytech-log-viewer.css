@@ -501,7 +501,269 @@ body {
     background: var(--text-dim);
 }
 
-/* Dense Line Rows */
+/* Dense Line Rows & Expandable Entries */
+.log-entry {
+    border-bottom: 1px solid var(--border-subtle);
+    transition: background 0.15s ease;
+}
+
+.entry-summary {
+    display: flex;
+    align-items: center;
+    padding: 3px 8px;
+    min-height: 26px;
+    border-left: 3px solid transparent;
+    cursor: pointer;
+    user-select: none;
+    transition: all 0.12s ease;
+    gap: 8px;
+}
+.entry-summary:hover {
+    background: var(--line-hover);
+}
+.log-entry.expanded > .entry-summary {
+    background: var(--bg-hover);
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.entry-left {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.expand-chevron {
+    width: 14px;
+    font-size: 10px;
+    color: var(--text-dim);
+    transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    text-align: center;
+}
+.log-entry.expanded .expand-chevron {
+    transform: rotate(90deg);
+    color: var(--primary-accent);
+}
+.chevron-placeholder {
+    width: 14px;
+    display: inline-block;
+}
+
+.entry-num {
+    width: 44px;
+    min-width: 44px;
+    text-align: right;
+    font-size: 11px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    color: var(--gutter-num);
+}
+
+.level-tag {
+    display: inline-block;
+    font-size: 9.5px;
+    font-weight: 700;
+    padding: 0 5px;
+    border-radius: 2px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    line-height: 16px;
+    height: 16px;
+    flex-shrink: 0;
+}
+
+.entry-time {
+    font-size: 11px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    color: var(--text-dim);
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+}
+
+.entry-msg {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 12px;
+    color: var(--text-main);
+}
+.entry-short-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    display: block;
+}
+
+.entry-right {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.badge-lines {
+    font-size: 10px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    padding: 1px 6px;
+    border-radius: 10px;
+    background: var(--bg-subbar);
+    border: 1px solid var(--border-color);
+    color: var(--text-muted);
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.btn-entry-copy {
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--text-dim);
+    font-size: 11px;
+    padding: 2px 5px;
+    border-radius: 3px;
+    cursor: pointer;
+    opacity: 0;
+    transition: all 0.15s ease;
+}
+.entry-summary:hover .btn-entry-copy {
+    opacity: 1;
+}
+.btn-entry-copy:hover {
+    background: var(--bg-hover);
+    border-color: var(--border-color);
+    color: var(--text-main);
+}
+
+/* Level Specific Colors for Entries */
+.log-entry.level-error > .entry-summary {
+    border-left-color: var(--err-border);
+}
+.log-entry.level-error .level-tag {
+    background: var(--err-border);
+    color: #fff;
+}
+.log-entry.level-error .entry-msg {
+    color: var(--err-text);
+    font-weight: 500;
+}
+.log-entry.level-error.expanded > .entry-summary {
+    background: var(--err-bg);
+}
+
+.log-entry.level-warning > .entry-summary {
+    border-left-color: var(--warn-border);
+}
+.log-entry.level-warning .level-tag {
+    background: var(--warn-border);
+    color: #000;
+}
+.log-entry.level-warning .entry-msg {
+    color: var(--warn-text);
+}
+.log-entry.level-warning.expanded > .entry-summary {
+    background: var(--warn-bg);
+}
+
+.log-entry.level-info > .entry-summary {
+    border-left-color: var(--info-border);
+}
+.log-entry.level-info .level-tag {
+    background: var(--info-border);
+    color: #fff;
+}
+.log-entry.level-info .entry-msg {
+    color: var(--info-text);
+}
+.log-entry.level-info.expanded > .entry-summary {
+    background: var(--info-bg);
+}
+
+.log-entry.level-debug > .entry-summary {
+    border-left-color: var(--debug-border);
+}
+.log-entry.level-debug .level-tag {
+    background: var(--debug-border);
+    color: #fff;
+}
+.log-entry.level-debug .entry-msg {
+    color: var(--debug-text);
+}
+
+/* Expanded Details Box */
+.entry-details {
+    padding: 8px 14px 12px 14px;
+    background: var(--bg-sidebar);
+    border-bottom: 1px solid var(--border-color);
+    animation: fadeIn 0.15s ease;
+}
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.details-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 6px;
+    margin-bottom: 8px;
+    border-bottom: 1px solid var(--border-subtle);
+    font-size: 11px;
+    color: var(--text-muted);
+}
+.details-meta {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.details-meta span {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+.badge-level-mini {
+    font-size: 9px;
+    font-weight: 700;
+    padding: 0 4px;
+    border-radius: 2px;
+}
+.badge-level-mini.level-error { background: var(--err-border); color: #fff; }
+.badge-level-mini.level-warning { background: var(--warn-border); color: #000; }
+.badge-level-mini.level-info { background: var(--info-border); color: #fff; }
+.badge-level-mini.level-debug { background: var(--debug-border); color: #fff; }
+
+.details-content {
+    background: var(--bg-panel);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    padding: 10px 12px;
+    overflow-x: auto;
+    max-height: 480px;
+    overflow-y: auto;
+}
+.details-content::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+.details-content::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 3px;
+}
+
+.full-log-code {
+    margin: 0;
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+    font-size: 12px;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-break: break-all;
+    color: var(--text-main);
+}
+
 .log-line {
     display: flex;
     align-items: flex-start;
@@ -511,7 +773,8 @@ body {
     word-break: break-all;
     white-space: pre-wrap;
 }
-.log-viewport.nowrap .log-line {
+.log-viewport.nowrap .log-line,
+.log-viewport.nowrap .full-log-code {
     white-space: pre;
     word-break: normal;
 }

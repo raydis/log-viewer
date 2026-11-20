@@ -119,6 +119,7 @@ return [
         'lines_options' => [100, 250, 500, 1000, 2500, 5000],
         'auto_refresh_default' => 10000,
         'max_read_bytes' => 4194304,  // 4MB tail buffer
+        'default_order' => env('RAYTECH_LOG_VIEWER_ORDER', 'desc'), // 'desc' = latest log on top, 'asc' = oldest first
     ],
 
     /*

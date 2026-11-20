@@ -159,6 +159,12 @@ class RaytechLogViewerController extends Controller
             $lineLimit = $defaultLines;
         }
 
+        $defaultOrder = config('raytech-log-viewer.features.default_order', 'desc');
+        $order = $request->query('order', $defaultOrder);
+        if (!in_array($order, ['desc', 'asc'], true)) {
+            $order = 'desc';
+        }
+
         $parsedLines = [];
         $stats = [
             'total' => 0,
@@ -172,7 +178,7 @@ class RaytechLogViewerController extends Controller
         if ($selectedFile && file_exists($selectedFile['path'])) {
             $maxBytes = (int) config('raytech-log-viewer.features.max_read_bytes', 4194304);
             $rawLines = $this->fileManager->readTail($selectedFile['path'], $lineLimit, $maxBytes);
-            $parsedData = $this->parser->parseLines($rawLines);
+            $parsedData = $this->parser->parseLines($rawLines, $order);
             $parsedLines = $parsedData['lines'];
             $stats = $parsedData['stats'];
         }
@@ -189,6 +195,7 @@ class RaytechLogViewerController extends Controller
                 'stats' => $stats,
                 'lines' => $parsedLines,
                 'total_lines' => count($parsedLines),
+                'order' => $order,
             ]);
         }
 
@@ -201,6 +208,7 @@ class RaytechLogViewerController extends Controller
             'stats' => $stats,
             'lineLimit' => $lineLimit,
             'allowedLines' => $allowedLines,
+            'order' => $order,
             'themeConfig' => config('raytech-log-viewer.theme', []),
             'features' => config('raytech-log-viewer.features', []),
             'assets' => config('raytech-log-viewer.assets', []),
