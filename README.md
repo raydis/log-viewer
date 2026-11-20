@@ -116,12 +116,17 @@ The configuration file is published at `config/raytech-log-viewer.php`. You can 
     'primary_color' => env('RAYTECH_LOG_VIEWER_PRIMARY_COLOR', '#1f6feb'),
 
     // Page title and brand header text
-    'title' => 'RayTech Log Viewer',
-    'brand_name' => 'RayTech Log Viewer',
+    'title' => env('RAYTECH_LOG_VIEWER_TITLE', 'RayTech Log Viewer'),
+    'brand_name' => env('RAYTECH_LOG_VIEWER_BRAND', 'RayTech'),
 
-    // "Back to App" button target URL
-    'back_url' => '/',
-    'show_back_button' => true,
+    // Brand logo path/URL displayed in header & browser tab favicon
+    // Default fallback: 'vendor/raytech-log-viewer/img/default_logo.jpg'
+    'brand_logo' => env('RAYTECH_LOG_VIEWER_LOGO', env('RAYTECH_LOG_LOGOPATH', 'vendor/raytech-log-viewer/img/default_logo.jpg')),
+
+    // Back button target URL and display label
+    'back_url' => env('RAYTECH_LOG_VIEWER_BACK_URL', '/'),
+    'back_url_name' => env('RAYTECH_LOG_VIEWER_BACK_URL_NAME', 'Back To Home'),
+    'show_back_button' => env('RAYTECH_LOG_VIEWER_SHOW_BACK_BUTTON', true),
 ],
 ```
 
