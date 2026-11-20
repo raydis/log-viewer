@@ -52,7 +52,7 @@ return [
     'theme' => [
         'default_mode' => env('LOG_VIEWER_THEME', 'light'),
         'primary_color' => env('LOG_VIEWER_PRIMARY_COLOR', '#1f6feb'),
-        'title' => env('LOG_VIEWER_TITLE', 'RayTech Log Viewer'),
+        'title' => env('LOG_VIEWER_TITLE', 'Log Viewer'),
         'brand_name' => env('APP_NAME', 'RayTech'),
         'brand_logo' => env('LOG_VIEWER_LOGO', 'vendor/raytech-log-viewer/img/default_logo.jpg'),
         'back_url' => env('LOG_VIEWER_BACK_URL', '/'),
@@ -119,7 +119,7 @@ return [
         'lines_options' => [100, 250, 500, 1000, 2500, 5000],
         'auto_refresh_default' => 10000,
         'max_read_bytes' => 4194304,  // 4MB tail buffer
-        'default_order' => env('RAYTECH_LOG_VIEWER_ORDER', 'desc'), // 'desc' = latest log on top, 'asc' = oldest first
+        'default_order' => env('RAYTECH_LOG_VIEWER_ORDER', 'desc'),  // 'desc' = latest log on top, 'asc' = oldest first
     ],
 
     /*
