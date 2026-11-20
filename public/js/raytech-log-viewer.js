@@ -370,13 +370,6 @@
             }
         });
 
-        // Hide date groups that have no visible entries
-        const dateGroups = document.querySelectorAll('.log-date-group');
-        dateGroups.forEach(group => {
-            const hasVisible = Array.from(group.querySelectorAll('.log-entry')).some(e => e.style.display !== 'none');
-            group.style.display = hasVisible ? '' : 'none';
-        });
-
         if (searchCountBadge && searchTerm.length > 0) {
             searchCountBadge.textContent = matchCount + ' ' + (matchCount === 1 ? 'match' : 'matches');
             searchCountBadge.style.display = 'inline-flex';
@@ -635,21 +628,22 @@
                      data-has-details="1">
                     
                     <div class="entry-summary" title="Click to view full content">
-                        <div class="entry-left">
+                        <div class="col-expand">
                             ${chevron}
-                            <span class="entry-num">${entry.num}</span>
                             ${levelIcon}
-                            ${levelTag}
-                            ${errorTypeTag}
-                            ${envTag}
-                            ${timeTag}
                         </div>
-                        <div class="entry-msg">
+                        <div class="col-type">
+                            <span class="log-type-tag tag-${entry.level}">${escapeHtml(entry.log_type || entry.level.toUpperCase())}</span>
+                        </div>
+                        <div class="col-date">
+                            <span class="log-date-text">${escapeHtml(entry.log_create_date || entry.timestamp || '')}</span>
+                        </div>
+                        <div class="col-message">
                             <span class="entry-short-text">${escapedShort}</span>
                         </div>
-                        <div class="entry-right">
+                        <div class="col-actions">
                             ${countBadge}
-                            <button type="button" class="btn-entry-copy" title="Copy this log entry" data-copy-text="${encodeURIComponent(entry.full_text || entry.text || '')}">
+                            <button type="button" class="btn-entry-copy" title="Copy body content" data-copy-text="${encodeURIComponent(entry.body_content || entry.full_text || entry.text || '')}">
                                 <i class="far fa-copy"></i>
                             </button>
                         </div>
@@ -665,34 +659,17 @@
         }
 
         let html = '<div id="linesWrapper">';
-        if (Array.isArray(data.date_groups) && data.date_groups.length > 0) {
-            data.date_groups.forEach(group => {
-                html += `
-                    <div class="log-date-group" data-date="${escapeHtml(group.date)}">
-                        <div class="date-group-header">
-                            <div class="date-header-left">
-                                <i class="far fa-calendar-alt date-icon"></i>
-                                <span class="date-title">${escapeHtml(group.date_formatted)}</span>
-                            </div>
-                            <div class="date-header-right">
-                                <span class="date-badge badge-total">${group.total} ${group.total === 1 ? 'log' : 'logs'}</span>
-                                ${group.errors > 0 ? `<span class="date-badge badge-errors">${group.errors} ${group.errors === 1 ? 'error' : 'errors'}</span>` : ''}
-                                ${group.warnings > 0 ? `<span class="date-badge badge-warnings">${group.warnings} ${group.warnings === 1 ? 'warning' : 'warnings'}</span>` : ''}
-                            </div>
-                        </div>
-                        <div class="date-group-entries">
-                `;
-                if (Array.isArray(group.entries)) {
-                    group.entries.forEach(entry => {
-                        html += buildEntryHtml(entry);
-                    });
-                }
-                html += `
-                        </div>
-                    </div>
-                `;
-            });
-        } else if (Array.isArray(data.lines)) {
+        html += `
+            <div class="log-table-header">
+                <div class="th-expand"></div>
+                <div class="th-type">Log Type</div>
+                <div class="th-date">Log Create Date</div>
+                <div class="th-message">Header Text</div>
+                <div class="th-actions">Actions</div>
+            </div>
+        `;
+
+        if (Array.isArray(data.lines)) {
             data.lines.forEach(entry => {
                 html += buildEntryHtml(entry);
             });

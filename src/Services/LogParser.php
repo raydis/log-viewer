@@ -134,6 +134,33 @@ class LogParser
     }
 
     /**
+     * Extract log_type (e.g. 'local.ERROR', 'production.INFO', 'ERROR', 'WARNING').
+     *
+     * @param string $line
+     * @return string
+     */
+    public function extractLogType(string $line): string
+    {
+        // 1. Laravel environment and level: local.ERROR or production.WARNING
+        if (preg_match('/^\[[^\]]+\]\s*([a-zA-Z0-9_-]+\.(?:EMERGENCY|ALERT|CRITICAL|ERROR|WARNING|NOTICE|INFO|DEBUG)):/i', $line, $m)) {
+            return $m[1];
+        }
+
+        // 2. Standard level with prefix: ERROR: or PHP Fatal error:
+        if (preg_match('/^\[[^\]]+\]\s*(PHP\s+[A-Za-z\s]+error|EMERGENCY|ALERT|CRITICAL|ERROR|WARNING|NOTICE|INFO|DEBUG):/i', $line, $m)) {
+            return $m[1];
+        }
+
+        // 3. Server bracket level: [php:error] or [core:error]
+        if (preg_match('/\[([a-zA-Z0-9_-]+:(?:error|warn|notice|info|debug))\]/i', $line, $m)) {
+            return $m[1];
+        }
+
+        $level = $this->detectLogLevel($line);
+        return strtoupper($level);
+    }
+
+    /**
      * Extract the clean header message:
      * - Strips timestamp and level prefix e.g. [2026-11-20 03:55:18] local.ERROR:
      * - Strips trailing JSON context block (everything from '{' to the end of line)
@@ -335,19 +362,22 @@ class LogParser
                 }
 
                 $level = $this->detectLogLevel($rawLine);
+                $logType = $this->extractLogType($rawLine);
                 $environment = $this->extractEnvironment($rawLine);
-                $message = $this->extractHeaderMessage($rawLine);
+                $headerText = $this->extractHeaderMessage($rawLine);
                 $date = $this->extractDate($timestamp);
                 $time = $this->extractTime($timestamp);
 
                 $currentEntry = [
                     'num' => $lineNum,
                     'level' => $level,
+                    'log_type' => $logType,
                     'timestamp' => $timestamp,
                     'date' => $date,
                     'time' => $time,
                     'environment' => $environment,
-                    'message' => $message,
+                    'header_text' => $headerText,
+                    'message' => $headerText,
                     'lines' => [$rawLine],
                 ];
             } else {
@@ -357,10 +387,12 @@ class LogParser
                     $currentEntry = [
                         'num' => $lineNum,
                         'level' => $this->detectLogLevel($rawLine),
+                        'log_type' => 'LOG',
                         'timestamp' => null,
                         'date' => null,
                         'time' => null,
                         'environment' => null,
+                        'header_text' => trim($rawLine),
                         'message' => trim($rawLine),
                         'lines' => [$rawLine],
                     ];
@@ -467,28 +499,30 @@ class LogParser
 
         $errorType = ($exception && !empty($exception['class_short'])) ? $exception['class_short'] : null;
 
-        $message = $entry['message'] ?? $this->extractHeaderMessage($firstLine);
-
-        // Determine if this entry has details to expand
-        $hasDetails = ($lineCount > 1) || ($exception !== null) || (!empty($stackFrames)) || (!empty($context)) || (mb_strlen($firstLine) > 100);
+        $headerText = $entry['header_text'] ?? $this->extractHeaderMessage($firstLine);
+        $logType = $entry['log_type'] ?? $this->extractLogType($firstLine);
 
         return [
             'id' => 'log-entry-' . $entry['num'],
             'num' => $entry['num'],
             'level' => $level,
+            'log_type' => $logType,
+            'log_create_date' => $entry['timestamp'],
             'timestamp' => $entry['timestamp'],
             'date' => $entry['date'],
             'time' => $entry['time'],
             'environment' => $entry['environment'] ?? null,
             'error_type' => $errorType,
-            'message' => $message,
-            'short_text' => $message,
+            'header_text' => $headerText,
+            'message' => $headerText,
+            'short_text' => $headerText,
+            'body_content' => $fullText,
             'full_text' => $fullText,
             'exception' => $exception,
             'stack_frames' => $stackFrames,
             'context' => $context,
             'context_json' => $contextJson,
-            'has_details' => $hasDetails,
+            'has_details' => true,
             'lines_count' => $lineCount,
             'frames_count' => count($stackFrames),
         ];
