@@ -54,7 +54,7 @@ return [
         'primary_color' => env('LOG_VIEWER_PRIMARY_COLOR', '#1f6feb'),
         'title' => env('LOG_VIEWER_TITLE', 'RayTech Log Viewer'),
         'brand_name' => env('APP_NAME', 'RayTech'),
-        'brand_logo' => env('LOG_VIEWER_LOGO', 'vendor/log-viewer/img/default_logo.jpg'),
+        'brand_logo' => env('LOG_VIEWER_LOGO', 'vendor/raytech-log-viewer/img/default_logo.jpg'),
         'back_url' => env('LOG_VIEWER_BACK_URL', '/'),
         'back_url_name' => env('LOG_VIEWER_BACK_URL_NAME', 'Back To Home'),
         'show_back_button' => env('LOG_VIEWER_SHOW_BACK_BUTTON', true),

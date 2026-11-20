@@ -18,8 +18,9 @@ class RaytechLogViewerServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        // Merge package configuration
-        $this->mergeConfigFrom(
+        // Recursively merge package configuration so newly added config keys
+        // are always available even if the host application has an older published config file.
+        $this->mergeConfigRecursively(
             __DIR__ . '/../config/raytech-log-viewer.php',
             'raytech-log-viewer'
         );
@@ -36,6 +37,21 @@ class RaytechLogViewerServiceProvider extends ServiceProvider
         $this->app->singleton(LogParser::class, function () {
             return new LogParser();
         });
+    }
+
+    /**
+     * Recursively merge configuration with default package values.
+     * Preserves user-defined config keys while automatically supplying newly added package defaults.
+     *
+     * @param string $path
+     * @param string $key
+     * @return void
+     */
+    protected function mergeConfigRecursively(string $path, string $key): void
+    {
+        $config = $this->app['config']->get($key, []);
+        $default = require $path;
+        $this->app['config']->set($key, array_replace_recursive($default, $config));
     }
 
     /**

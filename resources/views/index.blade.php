@@ -69,7 +69,7 @@
                 @endif
                 <span>{{ $themeConfig['brand_name'] ?? 'RayTech' }} Log Viewer</span>
             </a>
-            @if(!empty($themeConfig['show_back_button']))
+            @if($themeConfig['show_back_button'] ?? true)
                 <a href="{{ url($themeConfig['back_url'] ?? '/') }}" class="btn-compact" style="font-size: 11px;" title="Return to Main Application">
                     <i class="fa fa-arrow-left"></i> {{ $themeConfig['back_url_name'] ?? 'Back To Home' }}
                 </a>

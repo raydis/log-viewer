@@ -261,6 +261,45 @@ php artisan raytech-log-viewer:update
 
 ---
 
+### Step 3: Updating Configuration File (`config/raytech-log-viewer.php`)
+
+#### ❓ Why does `composer update` NOT update `config/raytech-log-viewer.php`?
+- **By Design**: `composer update` is a PHP Composer command, not a Laravel command. Composer downloads files strictly to `vendor/raytech/raytech-log-viewer/`. It **never touches** your Laravel application's `config/` directory.
+- **Protects Custom Settings**: When you first install the plugin, `php artisan raytech-log-viewer:install` copies the configuration to your root `config/raytech-log-viewer.php`. If Composer automatically replaced that file on update, it would **erase all your custom settings** (such as custom routes, auth middlewares, and custom log directories)!
+
+#### How to update `config/raytech-log-viewer.php`:
+
+##### Option A: Update via Artisan Command (Recommended)
+You can update your published configuration file to the latest version with one command:
+
+```bash
+# Overwrite and update config/raytech-log-viewer.php to latest default:
+php artisan raytech-log-viewer:update --config
+
+# Or update both assets and config together:
+php artisan raytech-log-viewer:update --all
+```
+
+*(Alternatively: `php artisan vendor:publish --tag=raytech-log-viewer-config --force`)*
+
+##### Option B: Zero-Maintenance Automatic Fallback (No overwrite needed!)
+The package uses **recursive configuration merging**. Even if you **never** update your published `config/raytech-log-viewer.php`, the package will automatically merge the latest defaults for any new keys (e.g. `default_order`, `back_url_name`, `show_back_button`) while keeping all your custom configurations 100% intact!
+
+If you want to manually add the newest configuration variables to your existing config file:
+
+```php
+// In 'theme' array:
+'brand_logo' => env('LOG_VIEWER_LOGO', 'vendor/raytech-log-viewer/img/default_logo.jpg'),
+'back_url' => env('LOG_VIEWER_BACK_URL', '/'),
+'back_url_name' => env('LOG_VIEWER_BACK_URL_NAME', 'Back To Home'),
+'show_back_button' => env('LOG_VIEWER_SHOW_BACK_BUTTON', true),
+
+// In 'features' array:
+'default_order' => env('RAYTECH_LOG_VIEWER_ORDER', 'desc'), // 'desc' = latest log on top
+```
+
+---
+
 ### ⚡ Automatic Updates (Zero Maintenance)
 
 #### Option A: Built-in Controller Auto-Sync
