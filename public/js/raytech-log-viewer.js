@@ -178,7 +178,7 @@
         }
     }
 
-    // Delegated click handler on viewport for log entries (Expand/Collapse & Copy)
+    // Delegated click handler on viewport for log entries (Expand/Collapse, Tabs & Copy)
     if (viewport) {
         viewport.addEventListener('click', function(e) {
             // 1. Copy button click (summary or details)
@@ -197,7 +197,28 @@
                 return;
             }
 
-            // 2. Click on summary row -> toggle details expansion
+            // 2. Tab switching inside expanded details
+            const tabBtn = e.target.closest('.tab-link');
+            if (tabBtn) {
+                e.stopPropagation();
+                const targetTab = tabBtn.getAttribute('data-tab');
+                const details = tabBtn.closest('.entry-details');
+                if (!details) return;
+
+                details.querySelectorAll('.tab-link').forEach(btn => btn.classList.remove('active'));
+                tabBtn.classList.add('active');
+
+                details.querySelectorAll('.tab-pane').forEach(pane => {
+                    if (pane.getAttribute('data-pane') === targetTab) {
+                        pane.classList.add('active');
+                    } else {
+                        pane.classList.remove('active');
+                    }
+                });
+                return;
+            }
+
+            // 3. Click on summary row -> toggle details expansion
             const summary = e.target.closest('.entry-summary');
             if (summary) {
                 const entry = summary.closest('.log-entry');
@@ -489,15 +510,110 @@
             const levelTag = ['error', 'warning', 'info', 'debug'].includes(entry.level)
                 ? `<span class="level-tag tag-${entry.level}">${entry.level}</span>`
                 : '';
+            const errorTypeTag = entry.error_type
+                ? `<span class="error-type-tag" title="${entry.exception ? escapeHtml(entry.exception.class) : ''}">${escapeHtml(entry.error_type)}</span>`
+                : '';
+            const envTag = entry.environment
+                ? `<span class="env-tag">${escapeHtml(entry.environment)}</span>`
+                : '';
             const timeTag = entry.timestamp
                 ? `<span class="entry-time" title="Log Timestamp"><i class="far fa-clock"></i> ${escapeHtml(entry.timestamp)}</span>`
                 : '';
             const chevron = hasDetails
                 ? '<i class="fa fa-chevron-right expand-chevron"></i>'
                 : '<span class="chevron-placeholder"></span>';
-            const linesBadge = (entry.lines_count && entry.lines_count > 1)
-                ? `<span class="badge-lines" title="${entry.lines_count} lines"><i class="fa fa-layer-group"></i> +${entry.lines_count - 1}</span>`
-                : '';
+
+            let countBadge = '';
+            if (entry.frames_count && entry.frames_count > 0) {
+                countBadge = `<span class="badge-lines" title="${entry.frames_count} stack frames"><i class="fa fa-layer-group"></i> ${entry.frames_count} frames</span>`;
+            } else if (entry.lines_count && entry.lines_count > 1) {
+                countBadge = `<span class="badge-lines" title="${entry.lines_count} lines"><i class="fa fa-layer-group"></i> +${entry.lines_count - 1}</span>`;
+            }
+
+            // Build exception card if present
+            let exceptionHtml = '';
+            if (entry.exception) {
+                exceptionHtml = `
+                    <div class="exception-card">
+                        <div class="exception-header-line">
+                            <span class="exception-badge"><i class="fa fa-bug"></i> ${escapeHtml(entry.exception.class)}</span>
+                        </div>
+                        <div class="exception-msg">${escapeHtml(entry.exception.message)}</div>
+                        <div class="exception-location">
+                            <i class="far fa-file-code"></i> in <strong>${escapeHtml(entry.exception.file)}</strong> on line <strong>${entry.exception.line}</strong>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Build tabs header and panes
+            let tabsHeaderHtml = '';
+            let tabsPanesHtml = '';
+            if (hasDetails) {
+                const hasFrames = Array.isArray(entry.stack_frames) && entry.stack_frames.length > 0;
+                const hasContext = Boolean(entry.context_json);
+
+                tabsHeaderHtml = `
+                    <div class="details-tabs-header">
+                        ${hasFrames ? `
+                            <button type="button" class="tab-link active" data-tab="trace">
+                                <i class="fa fa-stream"></i> Stack Trace <span class="tab-count">(${entry.stack_frames.length})</span>
+                            </button>
+                        ` : ''}
+                        ${hasContext ? `
+                            <button type="button" class="tab-link ${!hasFrames ? 'active' : ''}" data-tab="context">
+                                <i class="fa fa-database"></i> Context
+                            </button>
+                        ` : ''}
+                        <button type="button" class="tab-link ${!hasFrames && !hasContext ? 'active' : ''}" data-tab="raw">
+                            <i class="fa fa-code"></i> Raw Log
+                        </button>
+                        <div class="tab-actions-right">
+                            <button type="button" class="btn-compact btn-copy-full" data-copy-text="${encodeURIComponent(entry.full_text || entry.text || '')}" title="Copy full content">
+                                <i class="far fa-copy"></i> Copy Full Log
+                            </button>
+                        </div>
+                    </div>
+                `;
+
+                // Frames pane
+                let framesHtml = '';
+                if (hasFrames) {
+                    framesHtml = '<div class="stack-trace-list">';
+                    entry.stack_frames.forEach(frame => {
+                        framesHtml += `
+                            <div class="stack-frame">
+                                <span class="frame-num">#${frame.number}</span>
+                                <div class="frame-body">
+                                    ${frame.file ? `
+                                        <div class="frame-file-line">
+                                            <span class="frame-file">${escapeHtml(frame.file)}</span>${frame.line ? `<span class="frame-colon">:</span><span class="frame-line">${frame.line}</span>` : ''}
+                                        </div>
+                                    ` : ''}
+                                    <div class="frame-call"><code>${escapeHtml(frame.call)}</code></div>
+                                </div>
+                            </div>
+                        `;
+                    });
+                    framesHtml += '</div>';
+                }
+
+                // Context pane
+                const contextHtml = hasContext
+                    ? `<pre class="context-json-code"><code>${escapeHtml(entry.context_json)}</code></pre>`
+                    : '';
+
+                // Raw pane
+                const rawHtml = `<pre class="full-log-code"><code>${escapedFull}</code></pre>`;
+
+                tabsPanesHtml = `
+                    <div class="details-tab-panes">
+                        ${hasFrames ? `<div class="tab-pane active" data-pane="trace">${framesHtml}</div>` : ''}
+                        ${hasContext ? `<div class="tab-pane ${!hasFrames ? 'active' : ''}" data-pane="context">${contextHtml}</div>` : ''}
+                        <div class="tab-pane ${!hasFrames && !hasContext ? 'active' : ''}" data-pane="raw">${rawHtml}</div>
+                    </div>
+                `;
+            }
 
             html += `
                 <div class="log-entry level-${entry.level} ${hasDetails ? 'has-details' : ''}" 
@@ -511,13 +627,15 @@
                             ${chevron}
                             <span class="entry-num">${entry.num}</span>
                             ${levelTag}
+                            ${errorTypeTag}
+                            ${envTag}
                             ${timeTag}
                         </div>
                         <div class="entry-msg">
                             <span class="entry-short-text">${escapedShort}</span>
                         </div>
                         <div class="entry-right">
-                            ${linesBadge}
+                            ${countBadge}
                             <button type="button" class="btn-entry-copy" title="Copy this log entry" data-copy-text="${encodeURIComponent(entry.full_text || entry.text || '')}">
                                 <i class="far fa-copy"></i>
                             </button>
@@ -526,22 +644,9 @@
 
                     ${hasDetails ? `
                         <div class="entry-details" style="display: none;">
-                            <div class="details-toolbar">
-                                <div class="details-meta">
-                                    <span><i class="fa fa-info-circle"></i> Line #${entry.num}</span>
-                                    ${entry.timestamp ? `<span><i class="far fa-clock"></i> ${escapeHtml(entry.timestamp)}</span>` : ''}
-                                    <span class="badge-level-mini level-${entry.level}">${entry.level.toUpperCase()}</span>
-                                    <span>${entry.lines_count || 1} lines</span>
-                                </div>
-                                <div class="details-actions">
-                                    <button type="button" class="btn-compact btn-copy-full" data-copy-text="${encodeURIComponent(entry.full_text || entry.text || '')}" title="Copy full content">
-                                        <i class="far fa-copy"></i> Copy Full Log
-                                    </button>
-                                </div>
-                            </div>
-                            <div class="details-content">
-                                <pre class="full-log-code"><code>${escapedFull}</code></pre>
-                            </div>
+                            ${exceptionHtml}
+                            ${tabsHeaderHtml}
+                            ${tabsPanesHtml}
                         </div>
                     ` : ''}
                 </div>

@@ -13,7 +13,7 @@ class LogParser
     public function detectLogLevel(string $line): string
     {
         // Avoid classifying access log requests as errors just because URL contains /raytech-log-viewer or /error-log
-        if (preg_match('/"(GET|POST|PUT|DELETE|PATCH|HEAD|OPTIONS)\s+[^"]*(\/raytech-log-viewer|\/error-log)/i', $line)) {
+        if (preg_match('/"(GET|POST|PUT|DELETE|PATCH|HEAD|OPTIONS)\s+[^"]*(\/raytech-log-viewer|\/error-log|\/log-viewer)/i', $line)) {
             return 'default';
         }
 
@@ -77,6 +77,20 @@ class LogParser
     }
 
     /**
+     * Extract environment (e.g. local, production, staging) from line.
+     *
+     * @param string $line
+     * @return string|null
+     */
+    public function extractEnvironment(string $line): ?string
+    {
+        if (preg_match('/^\[[^\]]+\]\s*([a-zA-Z0-9_-]+)\.(EMERGENCY|ALERT|CRITICAL|ERROR|WARNING|NOTICE|INFO|DEBUG):/i', $line, $m)) {
+            return strtolower($m[1]);
+        }
+        return null;
+    }
+
+    /**
      * Check if a line is a continuation line of a multi-line log entry.
      *
      * @param string $line
@@ -102,7 +116,7 @@ class LogParser
         }
 
         // Common trace headers and exception markers
-        if (preg_match('/^(Stack trace:|\[stacktrace\]|\{main\}|\.{3}\s*\d+\s*more|thrown in\b)/i', $trimmed)) {
+        if (preg_match('/^(Stack trace:|\[stacktrace\]|\[previous exception\]|\{main\}|\.{3}\s*\d+\s*more|thrown in\b)/i', $trimmed)) {
             return true;
         }
 
@@ -116,6 +130,7 @@ class LogParser
 
     /**
      * Extract a clean single-line short summary from the main header line.
+     * Strips timestamp, environment, error prefixes, and trailing JSON context.
      *
      * @param string $line
      * @return string
@@ -136,6 +151,14 @@ class LogParser
         // Strip server prefix e.g. [php:error] [pid 1234] [client 127.0.0.1:5678]
         $text = preg_replace('/^(\[[^\]]+\]\s*)+/', '', $text);
 
+        // Strip trailing JSON context if present e.g. {"userId":2025,...} or {"exception":"[object]..."}
+        if (preg_match('/^(.*?)\s*(\{"(?:[^"]+)":.*\}\s*)$/s', $text, $jm)) {
+            $candidate = trim($jm[1]);
+            if ($candidate !== '') {
+                $text = $candidate;
+            }
+        }
+
         $text = trim($text);
 
         if ($text === '') {
@@ -143,6 +166,119 @@ class LogParser
         }
 
         return $text;
+    }
+
+    /**
+     * Parse structured exception details (type, message, file, line) from full log text.
+     *
+     * @param string $fullText
+     * @return array|null
+     */
+    public function parseException(string $fullText): ?array
+    {
+        // 1. Laravel Monolog exception object pattern:
+        // [object] (Illuminate\Database\QueryException(code: HY000): Message at /path/file.php:123)
+        if (preg_match('/\[object\]\s*\(([A-Za-z0-9_\\\\]+)(?:\(code:\s*[^)]*\))?:\s*(.+?)\s+at\s+([A-Za-z0-9_:\/\\\\.-]+):(\d+)\)/s', $fullText, $m)) {
+            $class = trim($m[1]);
+            $parts = explode('\\', $class);
+            return [
+                'class' => $class,
+                'class_short' => end($parts),
+                'message' => trim($m[2]),
+                'file' => trim($m[3]),
+                'file_short' => basename(str_replace('\\', '/', trim($m[3]))),
+                'line' => (int) $m[4],
+            ];
+        }
+
+        // 2. Native PHP uncaught exception:
+        // PHP Fatal error:  Uncaught Error: Call to undefined ... in /path:123
+        if (preg_match('/PHP\s+(?:Fatal error|Parse error|Warning|Notice):\s*(?:Uncaught\s+)?([A-Za-z0-9_\\\\]+)?(?::\s*)?(.+?)\s+in\s+([A-Za-z0-9_:\/\\\\.-]+)(?:\s+on line|\:)\s*(\d+)/is', $fullText, $m)) {
+            $class = !empty($m[1]) ? trim($m[1]) : 'Error';
+            $parts = explode('\\', $class);
+            return [
+                'class' => $class,
+                'class_short' => end($parts),
+                'message' => trim($m[2]),
+                'file' => trim($m[3]),
+                'file_short' => basename(str_replace('\\', '/', trim($m[3]))),
+                'line' => (int) $m[4],
+            ];
+        }
+
+        return null;
+    }
+
+    /**
+     * Parse stack trace frames into structured array of frames.
+     *
+     * @param string $fullText
+     * @return array
+     */
+    public function parseStackFrames(string $fullText): array
+    {
+        $frames = [];
+
+        if (!preg_match('/(?:\[stacktrace\]|Stack trace:)([\s\S]*?)(?:\n\n|\n\[previous exception\]|\n\{main\}|$)/i', $fullText, $match)) {
+            return $frames;
+        }
+
+        $traceText = $match[1];
+        // Match frames e.g. #0 /path/to/file.php(42): Class->method()
+        $pattern = '/#(\d+)\s+([A-Za-z0-9_:\/\\\\.-]+)?(?:\((\d+)\))?:\s*(.+?)(?=\n#\d+|\n\{main\}|$)/s';
+
+        if (preg_match_all($pattern, $traceText, $matches, PREG_SET_ORDER)) {
+            foreach ($matches as $m) {
+                $file = trim($m[2] ?? '');
+                $frames[] = [
+                    'number' => (int) $m[1],
+                    'file' => $file,
+                    'file_short' => $file ? basename(str_replace('\\', '/', $file)) : '',
+                    'line' => !empty($m[3]) ? (int) $m[3] : null,
+                    'call' => trim($m[4] ?? ''),
+                ];
+            }
+        }
+
+        return $frames;
+    }
+
+    /**
+     * Parse context data from first line or full text.
+     *
+     * @param string $firstLine
+     * @param string $fullText
+     * @return array|null
+     */
+    public function parseContext(string $firstLine, string $fullText): ?array
+    {
+        $context = null;
+
+        // Check if there is JSON on the first line
+        if (preg_match('/(\{"(?:[^"]+)":.*\})\s*$/s', $firstLine, $m)) {
+            $decoded = json_decode($m[1], true);
+            if (is_array($decoded)) {
+                $context = $decoded;
+            }
+        }
+
+        // If not found or incomplete, look for {"...":...} in full text
+        if ($context === null && preg_match('/(\{"[A-Za-z0-9_-]+":[\s\S]*?\})\n(?:\[stacktrace\]|#0|$)/s', $fullText, $m)) {
+            $decoded = json_decode($m[1], true);
+            if (is_array($decoded)) {
+                $context = $decoded;
+            }
+        }
+
+        if ($context !== null) {
+            // Strip the large raw exception string from context view to keep it clean & readable
+            if (isset($context['exception'])) {
+                unset($context['exception']);
+            }
+            return !empty($context) ? $context : null;
+        }
+
+        return null;
     }
 
     /**
@@ -183,12 +319,14 @@ class LogParser
                 // Start new log entry
                 $level = $this->detectLogLevel($rawLine);
                 $timestamp = $this->extractTimestamp($rawLine);
+                $environment = $this->extractEnvironment($rawLine);
                 $shortText = $this->extractShortText($rawLine);
 
                 $currentEntry = [
                     'num' => $lineNum,
                     'level' => $level,
                     'timestamp' => $timestamp,
+                    'environment' => $environment,
                     'short_text' => $shortText,
                     'lines' => [$rawLine],
                 ];
@@ -245,18 +383,39 @@ class LogParser
             }
         }
 
+        // Parse structured exception, stack frames, and context
+        $exception = $this->parseException($fullText);
+        $stackFrames = $this->parseStackFrames($fullText);
+        $context = $this->parseContext($firstLine, $fullText);
+        $contextJson = !empty($context) ? json_encode($context, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) : null;
+
+        // If exception was parsed, enhance short_text if needed
+        $shortText = $entry['short_text'];
+        if ($exception && !empty($exception['class_short'])) {
+            $errorType = $exception['class_short'];
+        } else {
+            $errorType = null;
+        }
+
         // Determine if this entry has details to expand
-        $hasDetails = ($lineCount > 1) || (mb_strlen($firstLine) > 110);
+        $hasDetails = ($lineCount > 1) || ($exception !== null) || (!empty($stackFrames)) || (!empty($context)) || (mb_strlen($firstLine) > 110);
 
         return [
             'id' => 'log-entry-' . $entry['num'],
             'num' => $entry['num'],
             'level' => $level,
             'timestamp' => $entry['timestamp'],
-            'short_text' => $entry['short_text'],
+            'environment' => $entry['environment'] ?? null,
+            'error_type' => $errorType,
+            'short_text' => $shortText,
             'full_text' => $fullText,
+            'exception' => $exception,
+            'stack_frames' => $stackFrames,
+            'context' => $context,
+            'context_json' => $contextJson,
             'has_details' => $hasDetails,
             'lines_count' => $lineCount,
+            'frames_count' => count($stackFrames),
         ];
     }
 }

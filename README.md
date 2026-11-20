@@ -3,7 +3,7 @@
 > **A high-performance, modern Laravel plugin for viewing all application and server logs with zero database setup, latest-logs-on-top ordering, interactive accordion summaries, dedicated CSS/JS assets, live AJAX refresh, instant search, and customizable themes.**
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
-![Version](https://img.shields.io/badge/version-1.1.0-brightgreen.svg)
+![Version](https://img.shields.io/badge/version-1.2.0-brightgreen.svg)
 ![PHP Version](https://img.shields.io/badge/php-%5E8.0-8892BF.svg)
 ![Laravel](https://img.shields.io/badge/laravel-%5E8.0%20%7C%20%5E9.0%20%7C%20%5E10.0%20%7C%20%5E11.0%20%7C%20%5E12.0-FF2D20.svg)
 
