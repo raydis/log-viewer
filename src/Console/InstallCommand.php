@@ -43,7 +43,7 @@ class InstallCommand extends Command
 
         $this->call('vendor:publish', $assetParams);
 
-        $prefix = config('raytech-log-viewer.route.prefix', 'raytech-log-viewer');
+        $prefix = config('raytech-log-viewer.route.prefix', 'log-viewer');
         $url = url($prefix);
 
         $this->newLine();

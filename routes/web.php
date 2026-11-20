@@ -6,9 +6,9 @@ use Raytech\LogViewer\Http\Controllers\RaytechLogViewerController;
 $enabled = config('raytech-log-viewer.enabled', true);
 
 if ($enabled) {
-    $prefix = config('raytech-log-viewer.route.prefix', 'raytech-log-viewer');
+    $prefix = config('raytech-log-viewer.route.prefix', 'log-viewer');
     $domain = config('raytech-log-viewer.route.domain', null);
-    $namePrefix = config('raytech-log-viewer.route.name', 'raytech-log-viewer.');
+    $namePrefix = config('raytech-log-viewer.route.name', 'log-viewer.');
 
     $routeGroup = Route::prefix($prefix)->name($namePrefix);
 
