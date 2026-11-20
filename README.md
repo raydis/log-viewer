@@ -1,8 +1,9 @@
 # RayTech Log Viewer (`raytech/raytech-log-viewer`)
 
-> **A high-performance, modern Laravel plugin for viewing all application and server logs with zero database setup, live AJAX refresh, instant search, and customizable themes.**
+> **A high-performance, modern Laravel plugin for viewing all application and server logs with zero database setup, latest-logs-on-top ordering, interactive accordion summaries, dedicated CSS/JS assets, live AJAX refresh, instant search, and customizable themes.**
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
+![Version](https://img.shields.io/badge/version-1.1.0-brightgreen.svg)
 ![PHP Version](https://img.shields.io/badge/php-%5E8.0-8892BF.svg)
 ![Laravel](https://img.shields.io/badge/laravel-%5E8.0%20%7C%20%5E9.0%20%7C%20%5E10.0%20%7C%20%5E11.0%20%7C%20%5E12.0-FF2D20.svg)
 
@@ -10,68 +11,97 @@
 
 ## 🌟 Key Features
 
-- ⚡ **Zero Database Setup**: Does not require any database tables, migrations, or models.
-- 🚀 **Lightning Fast Chunked Tail Reader**: Handles multi-gigabyte log files in milliseconds without running out of PHP memory.
+- 🔝 **Latest Logs on Top (Newest First by Default)**:
+  - Displays the newest log entries at the very top of the screen (`desc` order) so developers immediately see recent errors and events without scrolling to the bottom.
+  - One-click toolbar toggle to switch anytime between **Newest First** and **Oldest First**.
+  - Configurable via `default_order => 'desc'` in config or `.env`.
+- 📂 **Interactive Accordion (Short Summary to Full Detail)**:
+  - Each log entry is rendered as a clean, single-line preview row displaying **Timestamp**, **Severity Badge**, and a **Short Text Summary**.
+  - Click anywhere on an entry row to smoothly expand the **full error message**, **multi-line stack trace**, and formatted **JSON context**.
+  - **Expand All / Collapse All** toolbar button for fast bulk inspection.
+  - Per-entry **Copy Log** button to copy complete error messages and stack traces to clipboard with one click.
+- 🖼️ **Consolidated Logo & Browser Tab Favicon**:
+  - Unified single logo asset located at `public/img/default_logo.jpg` (no duplicate files).
+  - Automatically rendered in the topbar brand header.
+  - Automatically embedded in the HTML `<head>` as the browser tab favicon icon (`rel="icon"` and `rel="shortcut icon"`).
+  - Fully customizable via config (`'brand_logo'`) or `.env` (`LOG_VIEWER_LOGO`).
+- 🎨 **Modular External CSS & JS Assets**:
+  - Clean separation of concerns with dedicated stylesheets (`public/css/raytech-log-viewer.css`) and JavaScript logic (`public/js/raytech-log-viewer.js`).
+  - Automatic cache-busting version query string (`?v=1.1.0`).
+  - Built-in automatic asset sync: If published assets are older than the package assets, the controller automatically updates them seamlessly.
+- ⚡ **Zero Database Setup**:
+  - Does not require any database tables, migrations, models, or Redis queues. Works 100% directly from log files on disk.
+- 🚀 **Lightning Fast Chunked Tail Reader**:
+  - Handles multi-gigabyte log files in milliseconds without running out of PHP memory (`memory_limit`).
 - 🔍 **Auto-Detection for All Logs**:
   - **Laravel Logs**: Automatically discovers all logs in `storage/logs/*.log`.
   - **Server Logs**: Automatically detects PHP error logs (`ini_get('error_log')`), Apache (`bin/apache/*/logs`, `httpd`), Nginx, WAMP, MariaDB, MySQL, and Linux paths (`/var/log/*`).
-  - **Custom Log Files**: Add any custom files or directories via configuration or `.env`.
-- 🔄 **Real-Time Live Auto-Refresh**: Seamless AJAX polling (5s, 10s, 30s, or manual) with zero page reload or screen flickering.
+  - **Custom Log Files & Dirs**: Add any custom files or directories via configuration or `.env`.
+- 🔄 **Real-Time Live Auto-Refresh**:
+  - Seamless AJAX polling (5s, 10s, 30s, or manual) with zero page reload or screen flickering.
 - 🎯 **Smart Log Level Detection**:
-  - Highlights `EMERGENCY`, `ALERT`, `CRITICAL`, `ERROR`, `WARNING`, `INFO`, `DEBUG`, and `TRACE`.
-  - Filters by severity tag with instant badge counts.
-- 🔎 **Instant Client-Side Search**: Search through thousands of lines with live keyword highlighting and counter badges (`Ctrl + F`).
-- 🎨 **Fully Customizable Themes**:
-  - Dark / Light mode toggle with local storage persistence.
-  - Set custom brand colors, titles, and headers in `config/raytech-log-viewer.php`.
-- 📋 **Productivity Tools**:
-  - Copy visible log lines to clipboard.
-  - Download raw log file.
-  - View raw unformatted log in new tab.
-  - Clear / truncate log file safely with confirmation dialog.
-  - Word wrap toggle, sidebar file explorer toggle (`Ctrl + B`), and fullscreen mode.
+  - Detects `EMERGENCY`, `ALERT`, `CRITICAL`, `ERROR`, `WARNING`, `INFO`, `DEBUG`, and `TRACE`.
+  - Filter by severity tag with instant badge counts.
+- 🔎 **Instant Client-Side Search**:
+  - Search through thousands of lines with live keyword highlighting and counter badges (<kbd>Ctrl</kbd> + <kbd>F</kbd>).
+  - Auto-expands matching collapsed entries when searching.
+- 🌓 **Dark / Light Mode**:
+  - Instant theme toggle with `localStorage` persistence.
 - 🛡️ **Flexible Security & Access Control**:
   - Works with any middleware (`web`, `auth`, custom role guards).
-  - Supports programmatic closures (`RaytechLogViewer::auth(...)`) in service providers.
-  - Can be completely public or restricted to specific user types.
+  - Supports programmatic closures (`RaytechLogViewer::auth(...)`) in your `AppServiceProvider`.
+  - Can be completely public or restricted to specific user roles.
+- 📋 **Productivity Actions**:
+  - Download raw log file.
+  - View raw unformatted log in a new tab.
+  - Clear / truncate log file safely with confirmation dialog.
+  - Word wrap toggle, sidebar file explorer toggle (<kbd>Ctrl</kbd> + <kbd>B</kbd>), and fullscreen mode.
 
 ---
 
-## 📦 Installation
+## 📦 Installation Options
 
-### Option 1: Direct from GitHub (Public Repository)
+Choose the installation option that best fits your workflow:
 
-Install directly from the public GitHub repository without needing any personal tokens or authentication:
+### Option 1: Direct from Public GitHub Repository (Recommended)
 
-#### Method A: Using Two Composer Commands (Quickest)
+The repository is public on GitHub at `https://github.com/umesh240/log-viewer.git`. You do **not** need any personal access tokens, SSH keys, or usernames.
 
-Run these two commands in your Laravel project root:
+#### Method A: Using Composer CLI Commands (Quickest)
+
+Run these two commands in the root of your Laravel application:
 
 ```bash
-# 1. Add the GitHub repository to your project
-composer config repositories.log-viewer vcs https://github.com/umesh240/log-viewer.git
+# 1. Register the public GitHub repository in Composer
+composer config repositories.raytech-log-viewer vcs https://github.com/umesh240/log-viewer.git
 
-# 2. Require the package
+# 2. Require the package from the main branch
 composer require raytech/raytech-log-viewer:dev-main
 ```
 
-*(If your default branch is `master`, use `composer require raytech/raytech-log-viewer:dev-master`).*
+> **📌 Installing a Specific Tag/Release**:  
+> To install a stable tagged version instead of the development branch:  
+> ```bash
+> composer require raytech/raytech-log-viewer:^1.1
+> ```
 
 ---
 
-#### Method B: By Editing `composer.json`
+#### Method B: By Editing `composer.json` Manually
 
-Add the repository in your Laravel application's `composer.json`:
+Open your Laravel application's `composer.json` and add the repository configuration to the `"repositories"` array (create it if it does not exist) and require the package:
 
 ```json
-"repositories": [
-    {
-        "type": "vcs",
-        "url": "https://github.com/umesh240/log-viewer.git"
+{
+    "repositories": [
+        {
+            "type": "vcs",
+            "url": "https://github.com/umesh240/log-viewer.git"
+        }
+    ],
+    "require": {
+        "raytech/raytech-log-viewer": "dev-main"
     }
-],
-"require": {
-    "raytech/raytech-log-viewer": "dev-main"
 }
 ```
 
@@ -81,26 +111,33 @@ Then run:
 composer update raytech/raytech-log-viewer
 ```
 
+#### 💡 What do `vcs` and `dev-main` mean?
+- **`"type": "vcs"`**: Stands for *Version Control System*. It instructs Composer to inspect Git at the given URL directly instead of querying only the global Packagist directory.
+- **`"dev-main"`**: Instructs Composer to checkout code directly from the `main` branch. Composer prefixes Git branches with `dev-` so it knows it is tracking a branch rather than a numbered SemVer release.
+- **Version Tags**: When git tags are created (such as `v1.1.0`), you can also use standard version constraints like `"^1.1"` or `"1.1.0"`.
+
 ---
 
-### Option 2: Install from Local Path Repository (Recommended for Local Development)
+### Option 2: Local Path Repository (For Local Package Development)
 
-When developing locally on the same machine without pushing every change:
+If you are modifying the package locally on the same computer (e.g., at `E:/wamp/www/log_plugin`), you can link it directly into your Laravel project via a symlink:
 
 In your Laravel project's `composer.json`:
 
 ```json
-"repositories": [
-    {
-        "type": "path",
-        "url": "E:/wamp/www/log_plugin",
-        "options": {
-            "symlink": true
+{
+    "repositories": [
+        {
+            "type": "path",
+            "url": "E:/wamp/www/log_plugin",
+            "options": {
+                "symlink": true
+            }
         }
+    ],
+    "require": {
+        "raytech/raytech-log-viewer": "*"
     }
-],
-"require": {
-    "raytech/raytech-log-viewer": "*"
 }
 ```
 
@@ -110,11 +147,13 @@ Then run:
 composer update raytech/raytech-log-viewer
 ```
 
+Any code changes you make in `E:/wamp/www/log_plugin` will immediately reflect in your Laravel application without needing any git commit or push!
+
 ---
 
-### Option 3: Standard Composer Require (When Published on Packagist)
+### Option 3: Standard Packagist Installation (When Published)
 
-Once submitted to [packagist.org](https://packagist.org):
+Once the package is submitted to [packagist.org](https://packagist.org):
 
 ```bash
 composer require raytech/raytech-log-viewer
@@ -124,9 +163,9 @@ composer require raytech/raytech-log-viewer
 
 ### Option 4: Manual Copy (Without Composer Repositories)
 
-You can also copy the plugin folder directly into your Laravel project:
+If your server has no Git or Internet access, you can drop the code directly into your Laravel application:
 
-1. Copy the plugin directory into your Laravel project under `packages/raytech/log-viewer`:
+1. Copy the plugin files into `packages/raytech/log-viewer`:
    ```
    your-laravel-app/
    └── packages/
@@ -140,7 +179,7 @@ You can also copy the plugin folder directly into your Laravel project:
                └── composer.json
    ```
 
-2. Register the namespace in your Laravel project's `composer.json` under `autoload`:
+2. Register the PSR-4 namespace in your Laravel application's `composer.json`:
    ```json
    "autoload": {
        "psr-4": {
@@ -150,127 +189,187 @@ You can also copy the plugin folder directly into your Laravel project:
    }
    ```
 
-3. Run `composer dump-autoload`
+3. Run:
+   ```bash
+   composer dump-autoload
+   ```
 
-4. In Laravel 9/10, add the Service Provider to `config/app.php` (under `'providers'`):
+4. *(Laravel 8 / 9 / 10)* Register the Service Provider in `config/app.php` under `'providers'`:
    ```php
    Raytech\LogViewer\RaytechLogViewerServiceProvider::class,
    ```
-   *(In Laravel 11/12, add it to `bootstrap/providers.php`).*
+   *(In Laravel 11 / 12, Laravel auto-discovers it automatically or add to `bootstrap/providers.php`).*
 
 ---
 
 ## 🚀 Quick Setup
 
-After installing, run the install artisan command to publish the configuration file:
+After installing the package, run the install command:
 
 ```bash
 php artisan raytech-log-viewer:install
 ```
 
-That's it! Open your browser and navigate to:
+This command will:
+1. Publish `config/raytech-log-viewer.php` to your application's `config/` directory.
+2. Publish CSS, JS, and default logo assets to `public/vendor/raytech-log-viewer/`.
+
+That's it! Now open your browser and navigate to:
 
 ```
-https://your-domain.local/raytech-log-viewer
+https://your-domain.local/log-viewer
 ```
 
-*(You can customize the URL prefix to `/error-log`, `/admin/logs`, or anything else in the config file).*
+*(You can customize the URI prefix to `/raytech-log-viewer`, `/admin/logs`, `/error-log`, or anything else in the configuration).*
 
 ---
 
-## 🔄 Updating to Latest Version
+## 🔄 Updating to Latest Code & Assets
 
-When a new version is released:
+When updates or new features are pushed to the repository, follow these simple steps:
 
-### 1. Update package files via Composer:
+### Step 1: Update the Code via Composer
+
+Run:
+
 ```bash
 composer update raytech/raytech-log-viewer
 ```
 
-### 2. Update published assets (CSS, JS, logo):
+#### How Composer Compares and Updates:
+- **Branch Tracking (`dev-main`)**: Composer queries GitHub for the latest Git commit hash on `main`. If a newer commit exists, it downloads and replaces the package files.
+- **Tagged Releases (`^1.1`)**: Composer compares semantic version numbers (`v1.1.0`, `v1.1.1`, etc.) and downloads the latest release matching your constraint.
+
+> **💡 If Composer says "Nothing to modify" despite newer commits on GitHub**:  
+> Composer caches remote repository metadata locally. Simply clear the cache and re-run:  
+> ```bash
+> composer clear-cache
+> composer update raytech/raytech-log-viewer
+> ```
+
+---
+
+### Step 2: Update Published Assets (CSS, JS, Logo)
+
+Whenever styles, scripts, or logos are updated in the package, republish the assets:
+
 ```bash
 php artisan raytech-log-viewer:update
 ```
 
-> **💡 Automatic Asset Updates**: You can automate asset updates on every `composer update` by adding this to your Laravel project's `composer.json` under `"scripts"`:
-> ```json
-> "scripts": {
->     "post-update-cmd": [
->         "@php artisan vendor:publish --tag=raytech-log-viewer-assets --force"
->     ]
-> }
-> ```
+*(Alternatively: `php artisan vendor:publish --tag=raytech-log-viewer-assets --force`)*
+
+---
+
+### ⚡ Automatic Updates (Zero Maintenance)
+
+#### Option A: Built-in Controller Auto-Sync
+The package includes an intelligent asset controller fallback. When assets are loaded via `/log-viewer/assets/...`, the controller automatically compares file modification timestamps. If the package files are newer than the published files in `public/vendor/raytech-log-viewer/`, it **automatically syncs them in the background** without any manual command needed!
+
+#### Option B: Automated Composer Hook
+To guarantee that assets are always updated whenever anyone runs `composer update`, add this to your Laravel project's `composer.json` under `"scripts"`:
+
+```json
+"scripts": {
+    "post-update-cmd": [
+        "@php artisan vendor:publish --tag=raytech-log-viewer-assets --force"
+    ]
+}
+```
 
 ---
 
 ## ⚙️ Configuration Reference
 
-The configuration file is published at `config/raytech-log-viewer.php`. You can customize every aspect:
+The published configuration file is located at `config/raytech-log-viewer.php`.
 
-### 1. Route & URL Prefix
+### 1. Route & Middleware Settings
 
 ```php
 'route' => [
-    // Change the URI prefix (e.g. 'error-log' or 'admin/logs')
-    'prefix' => env('RAYTECH_LOG_VIEWER_ROUTE_PREFIX', 'raytech-log-viewer'),
+    // The URI prefix to access the viewer (e.g. 'log-viewer', 'error-log', 'admin/logs')
+    'prefix' => env('LOG_VIEWER_ROUTE_PREFIX', 'log-viewer'),
     
-    // Middleware protection: null, 'auth', ['web', 'auth'], or 'adminGard,web'
-    'middleware' => env('RAYTECH_LOG_VIEWER_MIDDLEWARE', 'web'),
+    // Route name prefix
+    'name' => 'log-viewer.',
     
-    'domain' => null,
+    // Optional domain constraint (e.g. 'logs.yourdomain.com')
+    'domain' => env('LOG_VIEWER_DOMAIN', null),
+    
+    // Middleware protection: 'web', ['web', 'auth'], or 'web,auth,adminGard'
+    // Leave null or empty to allow open access
+    'middleware' => env('LOG_VIEWER_MIDDLEWARE', 'web'),
 ],
 ```
 
-### 2. Theme & Custom Branding
+### 2. UI Theme, Branding & Logo Settings
 
 ```php
 'theme' => [
-    // Default appearance mode: 'light' or 'dark'
-    'default_mode' => env('RAYTECH_LOG_VIEWER_THEME', 'light'),
+    // Default appearance: 'light' or 'dark'
+    'default_mode' => env('LOG_VIEWER_THEME', 'light'),
 
-    // Primary brand color for active badges, buttons, and highlights
-    'primary_color' => env('RAYTECH_LOG_VIEWER_PRIMARY_COLOR', '#1f6feb'),
+    // Primary accent color for active badges, buttons, and highlights
+    'primary_color' => env('LOG_VIEWER_PRIMARY_COLOR', '#1f6feb'),
 
-    // Page title and brand header text
-    'title' => env('RAYTECH_LOG_VIEWER_TITLE', 'RayTech Log Viewer'),
-    'brand_name' => env('RAYTECH_LOG_VIEWER_BRAND', 'RayTech'),
+    // Browser tab title and topbar header text
+    'title' => env('LOG_VIEWER_TITLE', 'RayTech Log Viewer'),
+    'brand_name' => env('APP_NAME', 'RayTech'),
 
-    // Brand logo path/URL displayed in header & browser tab favicon
-    // Default fallback: 'vendor/raytech-log-viewer/img/default_logo.jpg'
-    'brand_logo' => env('RAYTECH_LOG_VIEWER_LOGO', env('RAYTECH_LOG_LOGOPATH', 'vendor/raytech-log-viewer/img/default_logo.jpg')),
+    // Brand logo path or URL displayed in header & browser tab favicon
+    // Default: 'vendor/raytech-log-viewer/img/default_logo.jpg'
+    'brand_logo' => env('LOG_VIEWER_LOGO', 'vendor/raytech-log-viewer/img/default_logo.jpg'),
 
-    // Back button target URL and display label
-    'back_url' => env('RAYTECH_LOG_VIEWER_BACK_URL', '/'),
-    'back_url_name' => env('RAYTECH_LOG_VIEWER_BACK_URL_NAME', 'Back To Home'),
-    'show_back_button' => env('RAYTECH_LOG_VIEWER_SHOW_BACK_BUTTON', true),
+    // Back button target URL and text label
+    'back_url' => env('LOG_VIEWER_BACK_URL', '/'),
+    'back_url_name' => env('LOG_VIEWER_BACK_URL_NAME', 'Back To Home'),
+    'show_back_button' => env('LOG_VIEWER_SHOW_BACK_BUTTON', true),
 ],
 ```
 
-### 3. Extra Log Files & Custom Directories
+### 3. Log Sorting & Action Controls
 
-Track any additional server logs, microservice logs, or custom background workers:
+```php
+'features' => [
+    // Default log ordering:
+    // 'desc' = Newest logs on top (Recommended)
+    // 'asc'  = Oldest logs on top (Classic tail order)
+    'default_order' => env('RAYTECH_LOG_VIEWER_ORDER', 'desc'),
+
+    'allow_download' => env('LOG_VIEWER_ALLOW_DOWNLOAD', true), // Allow downloading log files
+    'allow_clear' => env('LOG_VIEWER_ALLOW_CLEAR', true),       // Allow truncating/clearing log files
+    'allow_raw' => env('LOG_VIEWER_ALLOW_RAW', true),           // Allow viewing raw text in browser tab
+    'allow_copy' => true,                                      // Allow clipboard copy buttons
+    'default_lines' => 500,                                    // Default lines loaded on initial page load
+    'lines_options' => [100, 250, 500, 1000, 2500, 5000],
+    'auto_refresh_default' => 10000,                           // 10s auto-refresh interval (0 = disabled)
+    'max_read_bytes' => 4194304,                               // 4MB tail buffer (prevents memory spikes)
+],
+```
+
+### 4. Extra Log Directories & Custom Files
 
 ```php
 'logs' => [
-    'scan_laravel_logs' => true,
-    'scan_server_logs' => true,
-    'scan_php_error_log' => true,
+    'scan_laravel_logs' => true,      // Scan storage/logs/*.log
+    'scan_server_logs' => true,       // Scan Apache, Nginx, WAMP, MySQL logs
+    'scan_php_error_log' => true,      // Read ini_get('error_log')
 
-    // Add custom directory paths:
+    // Add extra directory paths to scan:
     'extra_directories' => [
         storage_path('logs/workers'),
         'E:/wamp/logs',
-        '/var/log/custom-apps',
+        '/var/log/my-daemons',
     ],
 
-    // Add individual custom log file paths:
+    // Add specific log file paths:
     'extra_files' => [
         'cron.log',
-        'worker.log',
         'payment_gateway.log',
+        storage_path('logs/worker.log'),
     ],
 
-    // Ignore file patterns:
+    // File patterns to ignore:
     'ignore_files' => [
         '.gitignore',
         '.gitkeep',
@@ -280,54 +379,52 @@ Track any additional server logs, microservice logs, or custom background worker
 ],
 ```
 
-Or configure via your `.env` file:
+---
+
+## 🌿 Environment Variables (`.env`)
+
+You can customize the log viewer directly in your `.env` file without altering PHP files:
 
 ```env
-RAYTECH_LOG_VIEWER_ROUTE_PREFIX=raytech-log-viewer
-RAYTECH_LOG_VIEWER_THEME=light
-RAYTECH_LOG_VIEWER_PRIMARY_COLOR=#1f6feb
-RAYTECH_LOG_VIEWER_MIDDLEWARE=web,auth
-RAYTECH_LOG_VIEWER_FILES=cron.log,payment.log,worker.log
-RAYTECH_LOG_VIEWER_DIRS=E:/wamp/logs
-```
+# URL & Access
+LOG_VIEWER_ENABLED=true
+LOG_VIEWER_ROUTE_PREFIX=log-viewer
+LOG_VIEWER_MIDDLEWARE="web,auth"
 
-### 4. Action Features & Permissions
+# Visual Branding & Favicon
+LOG_VIEWER_THEME=light
+LOG_VIEWER_PRIMARY_COLOR=#1f6feb
+LOG_VIEWER_TITLE="My App - Log Viewer"
+LOG_VIEWER_LOGO="vendor/raytech-log-viewer/img/default_logo.jpg"
+LOG_VIEWER_BACK_URL="/admin/dashboard"
+LOG_VIEWER_BACK_URL_NAME="Back to Dashboard"
+LOG_VIEWER_SHOW_BACK_BUTTON=true
 
-```php
-'features' => [
-    'allow_download' => true,     // Allow downloading log files
-    'allow_clear' => true,        // Allow truncating/clearing log files
-    'allow_raw' => true,          // Allow viewing raw text in browser tab
-    'allow_copy' => true,         // Allow clipboard copy button
-    'default_lines' => 500,       // Default line limit
-    'lines_options' => [100, 250, 500, 1000, 2500, 5000],
-    'auto_refresh_default' => 10000, // 10 seconds auto-refresh (0 = off)
-],
+# Log Ordering ('desc' for latest on top, 'asc' for oldest first)
+RAYTECH_LOG_VIEWER_ORDER=desc
+
+# Feature Toggles
+LOG_VIEWER_ALLOW_DOWNLOAD=true
+LOG_VIEWER_ALLOW_CLEAR=true
+LOG_VIEWER_ALLOW_RAW=true
+
+# Custom Directories & Files (comma-separated)
+LOG_VIEWER_DIRS="E:/wamp/logs,storage/logs/custom"
+LOG_VIEWER_FILES="cron.log,payment.log"
 ```
 
 ---
 
 ## 🔒 Access Control & Security
 
-You can restrict access to the log viewer using any of the following methods:
-
 ### Method A: Config / Environment Middleware
-
-In `config/raytech-log-viewer.php`:
-
-```php
-'middleware' => ['web', 'auth'],
-```
-
-Or in `.env`:
-
+Protect with standard Laravel middleware in `.env`:
 ```env
-RAYTECH_LOG_VIEWER_MIDDLEWARE="web,auth,adminGard"
+LOG_VIEWER_MIDDLEWARE="web,auth,admin"
 ```
 
-### Method B: Programmatic Closure (in `AppServiceProvider.php`)
-
-You can define custom authorization rules in the `boot()` method of your `app/Providers/AppServiceProvider.php`:
+### Method B: Programmatic Closure (`RaytechLogViewer::auth`)
+Define custom authorization logic in the `boot()` method of `app/Providers/AppServiceProvider.php`:
 
 ```php
 use Raytech\LogViewer\Facades\RaytechLogViewer;
@@ -335,48 +432,53 @@ use Raytech\LogViewer\Facades\RaytechLogViewer;
 public function boot(): void
 {
     RaytechLogViewer::auth(function ($request) {
-        // Return true to allow, false or abort(403) to deny, or redirect()
         $user = $request->user();
-        return $user && $user->is_super_admin;
+        return $user && $user->is_admin;
     });
 }
 ```
 
 ### Method C: Public Access (Allow All)
-
 ```php
 RaytechLogViewer::allowAll();
 ```
 
 ---
 
-## ⌨️ Keyboard Shortcuts
+## ⌨️ Keyboard Shortcuts & UI Controls
 
-| Shortcut | Action |
+| Control / Shortcut | Action |
 |---|---|
-| <kbd>Ctrl</kbd> + <kbd>B</kbd> / <kbd>Cmd</kbd> + <kbd>B</kbd> | Toggle file explorer sidebar |
+| <kbd>Click Row</kbd> | Toggle accordion expand / collapse for full error message and stack trace |
+| **Newest First / Oldest First** | Toggle chronological sorting (newest logs on top or bottom) |
+| **Expand All / Collapse All** | Expand or collapse all visible log entries at once |
 | <kbd>Ctrl</kbd> + <kbd>F</kbd> / <kbd>Cmd</kbd> + <kbd>F</kbd> | Focus instant line search input |
-| <kbd>Esc</kbd> | Clear current search filter |
+| <kbd>Esc</kbd> | Clear search filter |
+| <kbd>Ctrl</kbd> + <kbd>B</kbd> / <kbd>Cmd</kbd> + <kbd>B</kbd> | Toggle log files sidebar |
+| <kbd>Copy Button</kbd> | Copy individual log stack trace or all visible logs to clipboard |
 
 ---
 
 ## 💻 Artisan Console Commands
 
-### Install / Publish Configuration:
-
+### Install Configuration & Assets:
 ```bash
 php artisan raytech-log-viewer:install
-# Or force overwrite:
+# Force overwrite existing files:
 php artisan raytech-log-viewer:install --force
 ```
 
-### Clear / Truncate Log Files from CLI:
+### Force Update Assets:
+```bash
+php artisan raytech-log-viewer:update
+```
 
+### Clear / Truncate Log Files:
 ```bash
 # Clear a specific log file:
 php artisan raytech-log-viewer:clear laravel.log
 
-# Clear all detected log files:
+# Clear all discovered log files:
 php artisan raytech-log-viewer:clear --all
 ```
 
@@ -386,12 +488,20 @@ php artisan raytech-log-viewer:clear --all
 
 ```
 log_plugin/
-├── composer.json                       # Composer package definition & auto-discovery
+├── composer.json                       # Composer package definition & discovery
 ├── README.md                           # Documentation
+├── LICENSE                             # MIT License
 ├── config/
 │   └── raytech-log-viewer.php          # Publishable configuration
 ├── routes/
 │   └── web.php                         # Route definitions
+├── public/
+│   ├── css/
+│   │   └── raytech-log-viewer.css      # Dedicated modern CSS stylesheet
+│   ├── js/
+│   │   └── raytech-log-viewer.js       # Dedicated accordion & AJAX JS logic
+│   └── img/
+│       └── default_logo.jpg            # Single canonical brand & favicon logo
 ├── src/
 │   ├── RaytechLogViewerServiceProvider.php # Laravel Service Provider
 │   ├── RaytechLogViewer.php            # Core facade target & runtime manager
@@ -399,17 +509,39 @@ log_plugin/
 │   │   └── RaytechLogViewer.php        # Laravel Facade
 │   ├── Services/
 │   │   ├── LogFileManager.php          # Discovery, chunked tail reading & clearing
-│   │   └── LogParser.php               # Level detection, parsing & statistics
+│   │   └── LogParser.php               # Level detection, accordion parsing & ordering
 │   ├── Http/
 │   │   └── Controllers/
-│   │       └── RaytechLogViewerController.php # Full Controller with AJAX support
+│   │       └── RaytechLogViewerController.php # Controller with AJAX & asset auto-sync
 │   └── Console/
 │       ├── InstallCommand.php          # php artisan raytech-log-viewer:install
+│       ├── UpdateCommand.php           # php artisan raytech-log-viewer:update
 │       └── ClearCommand.php            # php artisan raytech-log-viewer:clear
 └── resources/
     └── views/
-        └── index.blade.php             # Modern high-density Blade template
+        └── index.blade.php             # High-density Blade template with accordion
 ```
+
+---
+
+## ❓ Frequently Asked Questions
+
+#### Q1: Why did Composer show `illuminate/support` conflicts on Laravel 8?
+**Answer**: Previous versions required `^9.0 || ^10.0 || ^11.0 || ^12.0`. In **v1.1.0**, compatibility has been expanded to `"illuminate/support": "^8.0 || ^9.0 || ^10.0 || ^11.0 || ^12.0"`. It now works smoothly on Laravel 8, 9, 10, 11, and 12.
+
+#### Q2: Composer says "Nothing to install, update or remove" when I update from GitHub.
+**Answer**: Composer caches repository information. Run:
+```bash
+composer clear-cache
+composer update raytech/raytech-log-viewer
+```
+
+#### Q3: How do I change the logo to my own company logo?
+**Answer**: Simply place your logo in `public/img/my_logo.png` and add this in your `.env`:
+```env
+LOG_VIEWER_LOGO="img/my_logo.png"
+```
+It will automatically show in the topbar and in the browser tab favicon.
 
 ---
 
