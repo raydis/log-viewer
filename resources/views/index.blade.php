@@ -317,7 +317,8 @@
                                  data-num="{{ $entry['num'] }}"
                                  data-has-details="1">
                                 
-                                <div class="entry-summary" title="Click to view full content">
+                                <!-- header_group: log_create_date, log_type, header_text -->
+                                <div class="header-group entry-summary" title="Click to view full content">
                                     <div class="col-expand">
                                         <i class="fa fa-chevron-right expand-chevron"></i>
                                         @if($entry['level'] === 'error')
@@ -345,7 +346,7 @@
 
                                     <!-- header_text -->
                                     <div class="col-message">
-                                        <span class="entry-short-text">{{ $entry['header_text'] ?? $entry['message'] ?? $entry['short_text'] ?? '' }}</span>
+                                        <span class="entry-short-text header-text">{{ $entry['header_text'] ?? $entry['message'] ?? $entry['short_text'] ?? '' }}</span>
                                     </div>
 
                                     <div class="col-actions">
@@ -360,15 +361,14 @@
                                     </div>
                                 </div>
 
-                                <div class="entry-details" style="display: none;">
+                                <!-- body_content: shown when clicking on header_group -->
+                                <div class="entry-details body-content-panel" style="display: none;">
                                     @if(!empty($entry['exception']))
-                                        <div class="exception-card">
-                                            <div class="exception-header-line">
-                                                <span class="exception-badge"><i class="fa fa-bug"></i> {{ $entry['exception']['class'] }}</span>
-                                            </div>
-                                            <div class="exception-msg">{{ $entry['exception']['message'] }}</div>
-                                            <div class="exception-location">
-                                                <i class="far fa-file-code"></i> in <strong>{{ $entry['exception']['file'] }}</strong> on line <strong>{{ $entry['exception']['line'] }}</strong>
+                                        <div class="stack-exception-header">
+                                            <div class="exception-type-title"><i class="fa fa-bug"></i> {{ $entry['exception']['class'] }}</div>
+                                            <div class="exception-message-text">{{ $entry['exception']['message'] }}</div>
+                                            <div class="exception-file-line">
+                                                in <strong>{{ $entry['exception']['file'] }}</strong> on line <strong>{{ $entry['exception']['line'] }}</strong>
                                             </div>
                                         </div>
                                     @endif
@@ -399,17 +399,17 @@
                                     <div class="details-tab-panes">
                                         @if(!empty($entry['stack_frames']))
                                             <div class="tab-pane active" data-pane="trace">
-                                                <div class="stack-trace-list">
+                                                <div class="stack-trace-frames">
                                                     @foreach($entry['stack_frames'] as $frame)
-                                                        <div class="stack-frame">
-                                                            <span class="frame-num">#{{ $frame['number'] }}</span>
-                                                            <div class="frame-body">
+                                                        <div class="stack-frame-row">
+                                                            <span class="frame-number">#{{ $frame['number'] }}</span>
+                                                            <div class="frame-detail">
                                                                 @if(!empty($frame['file']))
-                                                                    <div class="frame-file-line">
-                                                                        <span class="frame-file">{{ $frame['file'] }}</span>@if(!empty($frame['line']))<span class="frame-colon">:</span><span class="frame-line">{{ $frame['line'] }}</span>@endif
+                                                                    <div class="frame-location">
+                                                                        <span class="frame-filepath">{{ $frame['file'] }}</span>@if(!empty($frame['line']))<span class="frame-colon">:</span><span class="frame-linenum">{{ $frame['line'] }}</span>@endif
                                                                     </div>
                                                                 @endif
-                                                                <div class="frame-call"><code>{{ $frame['call'] }}</code></div>
+                                                                <div class="frame-callcode"><code>{{ $frame['call'] }}</code></div>
                                                             </div>
                                                         </div>
                                                     @endforeach

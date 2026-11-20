@@ -660,23 +660,30 @@ body {
     transition: background 0.15s ease;
 }
 
+.header-group,
 .entry-summary {
     display: flex;
     align-items: center;
-    padding: 4px 12px;
-    min-height: 32px;
+    padding: 6px 14px;
+    min-height: 36px;
     border-left: 3px solid transparent;
     cursor: pointer;
     user-select: none;
     transition: all 0.12s ease;
     gap: 12px;
 }
+.header-group:hover,
 .entry-summary:hover {
     background: var(--line-hover);
 }
+.log-entry.expanded > .header-group,
 .log-entry.expanded > .entry-summary {
     background: var(--bg-hover);
     border-bottom: 1px solid var(--border-subtle);
+}
+
+.header-text {
+    font-weight: 500;
 }
 
 .entry-left {
@@ -892,14 +899,42 @@ body {
     to { opacity: 1; transform: translateY(0); }
 }
 
-/* Exception Card */
+/* Exception Card (ongc-dak style) */
+.stack-exception-header,
 .exception-card {
     background: var(--bg-panel);
     border: 1px solid var(--border-color);
     border-left: 4px solid var(--err-border);
-    border-radius: 4px;
-    padding: 10px 14px;
-    margin-bottom: 10px;
+    border-radius: 6px;
+    padding: 12px 16px;
+    margin-bottom: 12px;
+}
+.exception-type-title {
+    color: #f85149;
+    font-size: 14.5px;
+    font-weight: 700;
+    margin-bottom: 4px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+[data-theme="light"] .exception-type-title {
+    color: #cf222e;
+}
+.exception-message-text {
+    color: var(--text-main);
+    font-size: 13.5px;
+    font-weight: 600;
+    line-height: 1.45;
+    margin-bottom: 6px;
+    word-break: break-word;
+}
+.exception-file-line {
+    font-size: 11.5px;
+    color: var(--text-dim);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    word-break: break-all;
+}
+.exception-file-line strong {
+    color: var(--text-main);
 }
 .exception-header-line {
     display: flex;
@@ -932,6 +967,67 @@ body {
 }
 .exception-location strong {
     color: var(--text-main);
+}
+
+/* Formatted Stack Trace Frames (like ongc-dak LaravelStackTraceDisplay) */
+.stack-trace-frames,
+.stack-trace-list {
+    background: var(--bg-panel);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    max-height: 520px;
+    overflow-y: auto;
+}
+.stack-frame-row {
+    display: flex;
+    align-items: flex-start;
+    padding: 8px 14px;
+    border-bottom: 1px solid var(--border-subtle);
+    gap: 12px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 12px;
+    transition: background 0.1s ease;
+}
+.stack-frame-row:last-child {
+    border-bottom: none;
+}
+.stack-frame-row:hover {
+    background: var(--line-hover);
+}
+.frame-number {
+    width: 32px;
+    min-width: 32px;
+    color: var(--text-dim);
+    font-size: 11.5px;
+    padding-top: 1px;
+    text-align: right;
+}
+.frame-detail {
+    flex: 1;
+    min-width: 0;
+}
+.frame-location {
+    margin-bottom: 3px;
+    font-size: 11.5px;
+}
+.frame-filepath {
+    color: #58a6ff;
+    word-break: break-all;
+}
+[data-theme="light"] .frame-filepath {
+    color: #0969da;
+}
+.frame-linenum {
+    color: #d29922;
+    font-weight: 600;
+}
+[data-theme="light"] .frame-linenum {
+    color: #9a6700;
+}
+.frame-callcode {
+    color: var(--text-main);
+    word-break: break-all;
+    font-size: 12px;
 }
 
 /* Details Tabs Navigation */

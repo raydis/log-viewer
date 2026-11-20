@@ -266,24 +266,31 @@ class LogParser
     {
         $frames = [];
 
-        if (!preg_match('/(?:\[stacktrace\]|Stack trace:)([\s\S]*?)(?:\n\n|\n\[previous exception\]|\n\{main\}|$)/i', $fullText, $match)) {
-            return $frames;
-        }
-
-        $traceText = $match[1];
-        // Match frames e.g. #0 /path/to/file.php(42): Class->method()
-        $pattern = '/#(\d+)\s+([A-Za-z0-9_:\/\\\\.-]+)?(?:\((\d+)\))?:\s*(.+?)(?=\n#\d+|\n\{main\}|$)/s';
-
-        if (preg_match_all($pattern, $traceText, $matches, PREG_SET_ORDER)) {
-            foreach ($matches as $m) {
-                $file = trim($m[2] ?? '');
-                $frames[] = [
-                    'number' => (int) $m[1],
-                    'file' => $file,
-                    'file_short' => $file ? basename(str_replace('\\', '/', $file)) : '',
-                    'line' => !empty($m[3]) ? (int) $m[3] : null,
-                    'call' => trim($m[4] ?? ''),
-                ];
+        if (preg_match('/(?:\[stacktrace\]|Stack trace:)([\s\S]*?)(?:\n\[previous exception\]|"\s*\}|$)/i', $fullText, $m)) {
+            $traceBlock = $m[1];
+            if (preg_match_all('/#(\d+)\s+(.+?)(?=\n#|\n\{main\}|\n"\s*\}|$)/s', $traceBlock, $matches, PREG_SET_ORDER)) {
+                foreach ($matches as $row) {
+                    $num = (int)$row[1];
+                    $body = trim($row[2]);
+                    if (preg_match('/^([A-Za-z0-9_:\/\\\\.-]+)(?:\((\d+)\))?:\s*(.+)$/s', $body, $fm)) {
+                        $file = $fm[1];
+                        $frames[] = [
+                            'number' => $num,
+                            'file' => $file,
+                            'file_short' => basename(str_replace('\\', '/', $file)),
+                            'line' => (isset($fm[2]) && $fm[2] !== '') ? (int)$fm[2] : null,
+                            'call' => trim($fm[3]),
+                        ];
+                    } else {
+                        $frames[] = [
+                            'number' => $num,
+                            'file' => '',
+                            'file_short' => '',
+                            'line' => null,
+                            'call' => $body,
+                        ];
+                    }
+                }
             }
         }
 

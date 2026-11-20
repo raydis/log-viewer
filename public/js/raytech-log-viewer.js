@@ -543,13 +543,11 @@
             let exceptionHtml = '';
             if (entry.exception) {
                 exceptionHtml = `
-                    <div class="exception-card">
-                        <div class="exception-header-line">
-                            <span class="exception-badge"><i class="fa fa-bug"></i> ${escapeHtml(entry.exception.class)}</span>
-                        </div>
-                        <div class="exception-msg">${escapeHtml(entry.exception.message)}</div>
-                        <div class="exception-location">
-                            <i class="far fa-file-code"></i> in <strong>${escapeHtml(entry.exception.file)}</strong> on line <strong>${entry.exception.line}</strong>
+                    <div class="stack-exception-header">
+                        <div class="exception-type-title"><i class="fa fa-bug"></i> ${escapeHtml(entry.exception.class)}</div>
+                        <div class="exception-message-text">${escapeHtml(entry.exception.message)}</div>
+                        <div class="exception-file-line">
+                            in <strong>${escapeHtml(entry.exception.file)}</strong> on line <strong>${entry.exception.line}</strong>
                         </div>
                     </div>
                 `;
@@ -575,8 +573,8 @@
                         <i class="fa fa-code"></i> Raw Log
                     </button>
                     <div class="tab-actions-right">
-                        <button type="button" class="btn-compact btn-copy-full" data-copy-text="${encodeURIComponent(entry.full_text || entry.text || '')}" title="Copy full content">
-                            <i class="far fa-copy"></i> Copy Full Log
+                        <button type="button" class="btn-compact btn-copy-full" data-copy-text="${encodeURIComponent(entry.body_content || entry.full_text || entry.text || '')}" title="Copy full content">
+                            <i class="far fa-copy"></i> Copy Body Content
                         </button>
                     </div>
                 </div>
@@ -585,18 +583,18 @@
             // Frames pane
             let framesHtml = '';
             if (hasFrames) {
-                framesHtml = '<div class="stack-trace-list">';
+                framesHtml = '<div class="stack-trace-frames">';
                 entry.stack_frames.forEach(frame => {
                     framesHtml += `
-                        <div class="stack-frame">
-                            <span class="frame-num">#${frame.number}</span>
-                            <div class="frame-body">
+                        <div class="stack-frame-row">
+                            <span class="frame-number">#${frame.number}</span>
+                            <div class="frame-detail">
                                 ${frame.file ? `
-                                    <div class="frame-file-line">
-                                        <span class="frame-file">${escapeHtml(frame.file)}</span>${frame.line ? `<span class="frame-colon">:</span><span class="frame-line">${frame.line}</span>` : ''}
+                                    <div class="frame-location">
+                                        <span class="frame-filepath">${escapeHtml(frame.file)}</span>${frame.line ? `<span class="frame-colon">:</span><span class="frame-linenum">${frame.line}</span>` : ''}
                                     </div>
                                 ` : ''}
-                                <div class="frame-call"><code>${escapeHtml(frame.call)}</code></div>
+                                <div class="frame-callcode"><code>${escapeHtml(frame.call)}</code></div>
                             </div>
                         </div>
                     `;
@@ -627,7 +625,7 @@
                      data-num="${entry.num}"
                      data-has-details="1">
                     
-                    <div class="entry-summary" title="Click to view full content">
+                    <div class="header-group entry-summary" title="Click to view full content">
                         <div class="col-expand">
                             ${chevron}
                             ${levelIcon}
@@ -639,7 +637,7 @@
                             <span class="log-date-text">${escapeHtml(entry.log_create_date || entry.timestamp || '')}</span>
                         </div>
                         <div class="col-message">
-                            <span class="entry-short-text">${escapedShort}</span>
+                            <span class="entry-short-text header-text">${escapedShort}</span>
                         </div>
                         <div class="col-actions">
                             ${countBadge}
@@ -649,7 +647,7 @@
                         </div>
                     </div>
 
-                    <div class="entry-details" style="display: none;">
+                    <div class="entry-details body-content-panel" style="display: none;">
                         ${exceptionHtml}
                         ${tabsHeaderHtml}
                         ${tabsPanesHtml}
