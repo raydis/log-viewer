@@ -404,8 +404,7 @@ class RaytechLogViewerController extends Controller
             : null;
 
         if (!$packageAsset && ($file === 'default_logo.jpg' || $file === 'img/default_logo.jpg')) {
-            $logoCandidate = realpath(__DIR__ . '/../../public/img/default_logo.jpg')
-                ?: realpath(__DIR__ . '/../../default_logo.jpg');
+            $logoCandidate = realpath(__DIR__ . '/../../public/img/default_logo.jpg');
             if ($logoCandidate && is_file($logoCandidate)) {
                 $packageAsset = $logoCandidate;
             }
