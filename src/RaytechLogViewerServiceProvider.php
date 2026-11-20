@@ -1,0 +1,69 @@
+<?php
+
+namespace Raytech\LogViewer;
+
+use Illuminate\Support\ServiceProvider;
+use Raytech\LogViewer\Console\ClearCommand;
+use Raytech\LogViewer\Console\InstallCommand;
+use Raytech\LogViewer\Services\LogFileManager;
+use Raytech\LogViewer\Services\LogParser;
+
+class RaytechLogViewerServiceProvider extends ServiceProvider
+{
+    /**
+     * Register any package services.
+     *
+     * @return void
+     */
+    public function register(): void
+    {
+        // Merge package configuration
+        $this->mergeConfigFrom(
+            __DIR__ . '/../config/raytech-log-viewer.php',
+            'raytech-log-viewer'
+        );
+
+        // Bind singleton services
+        $this->app->singleton('raytech-log-viewer', function () {
+            return new RaytechLogViewer();
+        });
+
+        $this->app->singleton(LogFileManager::class, function () {
+            return new LogFileManager();
+        });
+
+        $this->app->singleton(LogParser::class, function () {
+            return new LogParser();
+        });
+    }
+
+    /**
+     * Bootstrap any package services.
+     *
+     * @return void
+     */
+    public function boot(): void
+    {
+        // Register console commands & publishable resources
+        if ($this->app->runningInConsole()) {
+            $this->publishes([
+                __DIR__ . '/../config/raytech-log-viewer.php' => config_path('raytech-log-viewer.php'),
+            ], 'raytech-log-viewer-config');
+
+            $this->publishes([
+                __DIR__ . '/../resources/views' => resource_path('views/vendor/raytech-log-viewer'),
+            ], 'raytech-log-viewer-views');
+
+            $this->commands([
+                InstallCommand::class,
+                ClearCommand::class,
+            ]);
+        }
+
+        // Load package views
+        $this->loadViewsFrom(__DIR__ . '/../resources/views', 'raytech-log-viewer');
+
+        // Load package routes
+        $this->loadRoutesFrom(__DIR__ . '/../routes/web.php');
+    }
+}
