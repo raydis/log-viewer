@@ -363,29 +363,20 @@ class LogFileManager
         // Lookup by name
         if (!empty($fileName)) {
             foreach ($allFiles as $file) {
-                if ($file['name'] === $fileName) {
+                if (strtolower($file['name']) === strtolower($fileName)) {
                     return $file;
                 }
             }
         }
 
-        // Default preference: php_error.log or laravel.log or first file with content
+        // Default preference: 'laravel.log' first
         foreach ($allFiles as $file) {
-            if ($file['name'] === 'php_error.log' && $file['size'] > 0) {
-                return $file;
-            }
-        }
-        foreach ($allFiles as $file) {
-            if ($file['name'] === 'laravel.log' && $file['size'] > 0) {
-                return $file;
-            }
-        }
-        foreach ($allFiles as $file) {
-            if ($file['size'] > 0) {
+            if (strtolower($file['name']) === 'laravel.log') {
                 return $file;
             }
         }
 
+        // If 'laravel.log' does not exist, select the 1st log file
         return reset($allFiles) ?: null;
     }
 
