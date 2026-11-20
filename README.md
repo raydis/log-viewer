@@ -507,9 +507,16 @@ php artisan raytech-log-viewer:install
 php artisan raytech-log-viewer:install --force
 ```
 
-### Force Update Assets:
+### Force Update Assets & Config:
 ```bash
+# Update assets:
 php artisan raytech-log-viewer:update
+
+# Update config file:
+php artisan raytech-log-viewer:update --config
+
+# Update both assets and config:
+php artisan raytech-log-viewer:update --all
 ```
 
 ### Clear / Truncate Log Files:
@@ -520,6 +527,48 @@ php artisan raytech-log-viewer:clear laravel.log
 # Clear all discovered log files:
 php artisan raytech-log-viewer:clear --all
 ```
+
+### Uninstall & Clean Up Published Files:
+```bash
+# Remove published assets, views, and configuration:
+php artisan raytech-log-viewer:uninstall
+
+# Force removal without confirmation prompt:
+php artisan raytech-log-viewer:uninstall --force
+
+# Remove assets and views but keep config/raytech-log-viewer.php:
+php artisan raytech-log-viewer:uninstall --keep-config
+```
+
+---
+
+## 🗑️ Uninstalling the Plugin
+
+If you ever wish to completely remove the plugin from your Laravel project, follow these two simple steps:
+
+### Step 1: Remove Published Files (Artisan)
+Run the built-in uninstall command to cleanly delete published assets (`public/vendor/raytech-log-viewer/`), views, and configuration:
+
+```bash
+php artisan raytech-log-viewer:uninstall
+```
+
+*(Pass `--keep-config` if you want to preserve your custom configuration file).*
+
+### Step 2: Remove the Package Dependency (Composer)
+Remove the package from your `composer.json` and vendor directory:
+
+```bash
+composer remove raytech/raytech-log-viewer
+```
+
+### Step 3 (Optional): Remove VCS Repository
+If you registered the GitHub VCS repository via Composer CLI during installation, you can clean it up by running:
+
+```bash
+composer config --unset repositories.raytech-log-viewer
+```
+*(Or manually remove the repository block from `composer.json`).*
 
 ---
 
@@ -555,6 +604,7 @@ log_plugin/
 │   └── Console/
 │       ├── InstallCommand.php          # php artisan raytech-log-viewer:install
 │       ├── UpdateCommand.php           # php artisan raytech-log-viewer:update
+│       ├── UninstallCommand.php        # php artisan raytech-log-viewer:uninstall
 │       └── ClearCommand.php            # php artisan raytech-log-viewer:clear
 └── resources/
     └── views/
