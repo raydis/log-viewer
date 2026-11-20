@@ -8,11 +8,26 @@ use Raytech\LogViewer\Services\LogParser;
 class RaytechLogViewer
 {
     /**
+     * Current package version.
+     */
+    public const VERSION = '1.0.0';
+
+    /**
      * Optional custom access restriction callback(s) or middleware(s).
      *
      * @var callable|string|array|bool|null
      */
     protected static $accessRestriction = null;
+
+    /**
+     * Get the current package version.
+     *
+     * @return string
+     */
+    public static function version(): string
+    {
+        return self::VERSION;
+    }
 
     /**
      * Set access restriction callback or middleware.

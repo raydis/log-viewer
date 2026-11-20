@@ -178,6 +178,31 @@ https://your-domain.local/raytech-log-viewer
 
 ---
 
+## 🔄 Updating to Latest Version
+
+When a new version is released:
+
+### 1. Update package files via Composer:
+```bash
+composer update raytech/raytech-log-viewer
+```
+
+### 2. Update published assets (CSS, JS, logo):
+```bash
+php artisan raytech-log-viewer:update
+```
+
+> **💡 Automatic Asset Updates**: You can automate asset updates on every `composer update` by adding this to your Laravel project's `composer.json` under `"scripts"`:
+> ```json
+> "scripts": {
+>     "post-update-cmd": [
+>         "@php artisan vendor:publish --tag=raytech-log-viewer-assets --force"
+>     ]
+> }
+> ```
+
+---
+
 ## ⚙️ Configuration Reference
 
 The configuration file is published at `config/raytech-log-viewer.php`. You can customize every aspect:

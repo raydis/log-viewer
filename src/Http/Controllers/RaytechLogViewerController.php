@@ -205,6 +205,7 @@ class RaytechLogViewerController extends Controller
             'features' => config('raytech-log-viewer.features', []),
             'assets' => config('raytech-log-viewer.assets', []),
             'logoUrl' => $this->resolveLogoUrl(),
+            'version' => RaytechLogViewer::VERSION,
         ]);
     }
 
@@ -387,30 +388,40 @@ class RaytechLogViewerController extends Controller
 
         $targetPath = null;
 
+        // Resolve package source asset
+        $packagePublic = realpath(__DIR__ . '/../../public');
+        $candidate = realpath(__DIR__ . '/../../public/' . $file);
+        $packageAsset = ($packagePublic && $candidate && str_starts_with($candidate, $packagePublic) && is_file($candidate))
+            ? $candidate
+            : null;
+
+        if (!$packageAsset && ($file === 'default_logo.jpg' || $file === 'img/default_logo.jpg')) {
+            $logoCandidate = realpath(__DIR__ . '/../../public/img/default_logo.jpg')
+                ?: realpath(__DIR__ . '/../../default_logo.jpg');
+            if ($logoCandidate && is_file($logoCandidate)) {
+                $packageAsset = $logoCandidate;
+            }
+        }
+
         // 1. Check published public path
         if (function_exists('public_path')) {
             $published = public_path('vendor/raytech-log-viewer/' . $file);
             if (file_exists($published) && is_file($published)) {
-                $targetPath = $published;
+                // Compare timestamps: if package has newer code, auto-sync and serve latest code
+                if ($packageAsset && filemtime($packageAsset) > filemtime($published)) {
+                    if (is_writable($published)) {
+                        @copy($packageAsset, $published);
+                    }
+                    $targetPath = $packageAsset;
+                } else {
+                    $targetPath = $published;
+                }
             }
         }
 
-        // 2. Check package public folder
-        if (!$targetPath) {
-            $packagePublic = realpath(__DIR__ . '/../../public');
-            $candidate = realpath(__DIR__ . '/../../public/' . $file);
-            if ($packagePublic && $candidate && str_starts_with($candidate, $packagePublic) && is_file($candidate)) {
-                $targetPath = $candidate;
-            }
-        }
-
-        // 3. Fallback for default logo specifically
-        if (!$targetPath && ($file === 'default_logo.jpg' || $file === 'img/default_logo.jpg')) {
-            $candidate = realpath(__DIR__ . '/../../public/img/default_logo.jpg')
-                ?: realpath(__DIR__ . '/../../default_logo.jpg');
-            if ($candidate && is_file($candidate)) {
-                $targetPath = $candidate;
-            }
+        // 2. Fallback to package source asset directly
+        if (!$targetPath && $packageAsset) {
+            $targetPath = $packageAsset;
         }
 
         if (!$targetPath || !file_exists($targetPath)) {

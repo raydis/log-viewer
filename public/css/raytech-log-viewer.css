@@ -457,6 +457,15 @@ body {
     justify-content: space-between;
     align-items: center;
 }
+.version-tag {
+    font-size: 10px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    color: var(--text-muted);
+    background: var(--bg-hover);
+    padding: 1px 5px;
+    border-radius: 3px;
+    border: 1px solid var(--border-color);
+}
 
 /* Log Content Area - High Density */
 .log-container {

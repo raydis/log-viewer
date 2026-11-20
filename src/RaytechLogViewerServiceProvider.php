@@ -5,6 +5,7 @@ namespace Raytech\LogViewer;
 use Illuminate\Support\ServiceProvider;
 use Raytech\LogViewer\Console\ClearCommand;
 use Raytech\LogViewer\Console\InstallCommand;
+use Raytech\LogViewer\Console\UpdateCommand;
 use Raytech\LogViewer\Services\LogFileManager;
 use Raytech\LogViewer\Services\LogParser;
 
@@ -60,6 +61,7 @@ class RaytechLogViewerServiceProvider extends ServiceProvider
 
             $this->commands([
                 InstallCommand::class,
+                UpdateCommand::class,
                 ClearCommand::class,
             ]);
         }

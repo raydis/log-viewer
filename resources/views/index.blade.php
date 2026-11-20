@@ -36,7 +36,7 @@
     @endphp
 
     <!-- RayTech Log Viewer Stylesheet -->
-    <link rel="stylesheet" href="{{ $cssUrl }}">
+    <link rel="stylesheet" href="{{ $cssUrl }}?v={{ $version ?? '1.0.0' }}">
 
     @if(!empty($themeConfig['primary_color']) && $themeConfig['primary_color'] !== '#1f6feb')
         <style>
@@ -261,7 +261,7 @@
 
             <div class="sidebar-footer">
                 <span><i class="fa fa-hdd"></i> {{ count($allFiles) }} Log Files</span>
-                <span title="Auto-scanned from storage/logs, server roots, and custom paths">Auto-detected</span>
+                <span class="version-tag" title="RayTech Log Viewer Version">v{{ $version ?? '1.0.0' }}</span>
             </div>
         </aside>
 
@@ -351,6 +351,6 @@
             csrfToken: @json(csrf_token())
         };
     </script>
-    <script src="{{ $jsUrl }}"></script>
+    <script src="{{ $jsUrl }}?v={{ $version ?? '1.0.0' }}"></script>
 </body>
 </html>
