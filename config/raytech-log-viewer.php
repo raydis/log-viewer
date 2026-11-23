@@ -156,6 +156,44 @@ return [
 
     /*
      * |--------------------------------------------------------------------------
+     * | Password Protection & Security Session
+     * |--------------------------------------------------------------------------
+     * |
+     * | When enabled, visitors must enter a password before accessing the log viewer.
+     * | - If correct: access is granted for the session without re-asking.
+     * | - If incorrect: user gets 3 attempts. After 3 failed attempts, they are
+     * |   locked out and redirected to the home page!
+     * | - Pressing the emergency destroy shortcut (Ctrl + Shift + D) instantly
+     * |   destroys the session and closes all open log viewer tabs!
+     * |
+     * | - enabled: Enable password protection (default: false)
+     * | - password: Password required to access log viewer
+     * | - max_attempts: Maximum failed password attempts before lockout (default: 3)
+     * | - lockout_redirect: URL to redirect user when max attempts are exceeded (default: '/')
+     * | - lockout_duration: Lockout duration in seconds before attempts reset (default: 60)
+     * | - destroy_shortcut: Hotkey to destroy session and close all open tabs
+     * |
+     */
+    'security' => [
+        'enabled' => env('LOG_VIEWER_PASSWORD_PROTECTED', false),
+        'password' => env('LOG_VIEWER_PASSWORD', 'secret'),
+        'max_attempts' => (int) env('LOG_VIEWER_MAX_ATTEMPTS', 3),
+        'lockout_redirect' => env('LOG_VIEWER_LOCKOUT_REDIRECT', '/'),
+        'lockout_duration' => (int) env('LOG_VIEWER_LOCKOUT_DURATION', 60),
+        'session_key' => 'raytech_log_viewer_authenticated',
+        'attempts_key' => 'raytech_log_viewer_failed_attempts',
+        'lockout_key' => 'raytech_log_viewer_locked_until',
+        'destroy_shortcut' => [
+            'enabled' => env('LOG_VIEWER_DESTROY_SHORTCUT_ENABLED', true),
+            'key' => env('LOG_VIEWER_DESTROY_SHORTCUT_KEY', 'd'),
+            'ctrl' => true,
+            'shift' => true,
+            'alt' => false,
+        ],
+    ],
+
+    /*
+     * |--------------------------------------------------------------------------
      * | Asset CDN Sources
      * |--------------------------------------------------------------------------
      * |

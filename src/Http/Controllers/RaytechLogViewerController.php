@@ -139,13 +139,85 @@ class RaytechLogViewerController extends Controller
     }
 
     /**
+     * Check if security password protection is enabled.
+     *
+     * @return bool
+     */
+    protected function isSecurityEnabled(): bool
+    {
+        return (bool) config('raytech-log-viewer.security.enabled', false);
+    }
+
+    /**
+     * Check if the current session is verified and authenticated.
+     *
+     * @param Request $request
+     * @return bool
+     */
+    protected function isSessionAuthenticated(Request $request): bool
+    {
+        if (!$this->isSecurityEnabled()) {
+            return true;
+        }
+
+        $sessionKey = (string) config('raytech-log-viewer.security.session_key', 'raytech_log_viewer_authenticated');
+        return (bool) $request->session()->get($sessionKey, false);
+    }
+
+    /**
+     * Render the password prompt authentication screen.
+     *
+     * @param Request $request
+     * @return \Illuminate\Contracts\View\View|\Illuminate\Http\RedirectResponse
+     */
+    protected function renderPasswordPrompt(Request $request)
+    {
+        $lockoutKey = (string) config('raytech-log-viewer.security.lockout_key', 'raytech_log_viewer_locked_until');
+        $lockoutUntil = (int) $request->session()->get($lockoutKey, 0);
+
+        if ($lockoutUntil > time()) {
+            $remaining = $lockoutUntil - time();
+            $lockoutRedirect = config('raytech-log-viewer.security.lockout_redirect', '/');
+            return redirect($lockoutRedirect)->with('error', "Too many failed password attempts. Access is locked for {$remaining} more second(s).");
+        }
+
+        $attemptsKey = (string) config('raytech-log-viewer.security.attempts_key', 'raytech_log_viewer_failed_attempts');
+        $attempts = (int) $request->session()->get($attemptsKey, 0);
+        $maxAttempts = (int) config('raytech-log-viewer.security.max_attempts', 3);
+
+        $namePrefix = config('raytech-log-viewer.route.name', 'log-viewer.');
+
+        return view('raytech-log-viewer::auth', [
+            'themeConfig' => config('raytech-log-viewer.theme', []),
+            'assets' => config('raytech-log-viewer.assets', []),
+            'logoUrl' => $this->resolveLogoUrl(),
+            'version' => RaytechLogViewer::VERSION,
+            'attempts' => $attempts,
+            'maxAttempts' => $maxAttempts,
+            'authRoute' => $namePrefix . 'auth',
+            'assetRoute' => $namePrefix . 'asset',
+        ]);
+    }
+
+    /**
      * Main display handler for logs page.
      *
      * @param Request $request
-     * @return \Illuminate\Contracts\View\View|\Illuminate\Http\JsonResponse
+     * @return \Illuminate\Contracts\View\View|\Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
      */
     public function index(Request $request)
     {
+        if ($this->isSecurityEnabled() && !$this->isSessionAuthenticated($request)) {
+            if ($request->ajax() || $request->query('ajax') == '1' || $request->wantsJson()) {
+                return response()->json([
+                    'status' => false,
+                    'message' => 'Unauthorized. Password verification required.',
+                    'auth_required' => true,
+                ], 401);
+            }
+            return $this->renderPasswordPrompt($request);
+        }
+
         $allFiles = $this->fileManager->getAllLogFiles();
         $fileKey = $request->query('key');
         $fileName = $request->query('file');
@@ -202,6 +274,8 @@ class RaytechLogViewerController extends Controller
             ]);
         }
 
+        $namePrefix = config('raytech-log-viewer.route.name', 'log-viewer.');
+
         return view('raytech-log-viewer::index', [
             'allFiles' => $allFiles,
             'laravelLogs' => $laravelLogs,
@@ -216,10 +290,95 @@ class RaytechLogViewerController extends Controller
             'order' => $order,
             'themeConfig' => config('raytech-log-viewer.theme', []),
             'features' => config('raytech-log-viewer.features', []),
+            'security' => config('raytech-log-viewer.security', []),
+            'isSecurityEnabled' => $this->isSecurityEnabled(),
+            'logoutRoute' => $namePrefix . 'logout',
             'assets' => config('raytech-log-viewer.assets', []),
             'logoUrl' => $this->resolveLogoUrl(),
             'version' => RaytechLogViewer::VERSION,
         ]);
+    }
+
+    /**
+     * Process password authentication.
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    public function authenticate(Request $request)
+    {
+        if (!$this->isSecurityEnabled()) {
+            $namePrefix = config('raytech-log-viewer.route.name', 'log-viewer.');
+            return redirect()->route($namePrefix . 'index');
+        }
+
+        $lockoutKey = (string) config('raytech-log-viewer.security.lockout_key', 'raytech_log_viewer_locked_until');
+        $lockoutUntil = (int) $request->session()->get($lockoutKey, 0);
+
+        if ($lockoutUntil > time()) {
+            $remaining = $lockoutUntil - time();
+            $lockoutRedirect = config('raytech-log-viewer.security.lockout_redirect', '/');
+            return redirect($lockoutRedirect)->with('error', "Too many failed attempts. Access is locked for {$remaining} more second(s).");
+        }
+
+        $inputPassword = (string) $request->input('password', '');
+        $configuredPassword = (string) config('raytech-log-viewer.security.password', '');
+        $sessionKey = (string) config('raytech-log-viewer.security.session_key', 'raytech_log_viewer_authenticated');
+        $attemptsKey = (string) config('raytech-log-viewer.security.attempts_key', 'raytech_log_viewer_failed_attempts');
+        $maxAttempts = (int) config('raytech-log-viewer.security.max_attempts', 3);
+        $namePrefix = config('raytech-log-viewer.route.name', 'log-viewer.');
+
+        $isMatch = ($inputPassword === $configuredPassword);
+        if (!$isMatch && function_exists('password_verify') && str_starts_with($configuredPassword, '$2y$')) {
+            $isMatch = password_verify($inputPassword, $configuredPassword);
+        }
+
+        if ($isMatch) {
+            $request->session()->forget($attemptsKey);
+            $request->session()->forget($lockoutKey);
+            $request->session()->put($sessionKey, true);
+
+            return redirect()->route($namePrefix . 'index');
+        }
+
+        // Increment failed attempts
+        $attempts = (int) $request->session()->get($attemptsKey, 0) + 1;
+        $request->session()->put($attemptsKey, $attempts);
+
+        if ($attempts >= $maxAttempts) {
+            $lockoutDuration = (int) config('raytech-log-viewer.security.lockout_duration', 60);
+            $request->session()->put($lockoutKey, time() + $lockoutDuration);
+            $request->session()->forget($attemptsKey);
+            $request->session()->forget($sessionKey);
+
+            $lockoutRedirect = config('raytech-log-viewer.security.lockout_redirect', '/');
+            return redirect($lockoutRedirect)->with('error', "Authentication failed {$maxAttempts} times. Access denied.");
+        }
+
+        $remaining = $maxAttempts - $attempts;
+        return redirect()->back()->with('error', "Incorrect password. {$remaining} attempt(s) remaining.");
+    }
+
+    /**
+     * Terminate the log viewer session (Destroy Session & Logout).
+     *
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse|\Illuminate\Http\RedirectResponse
+     */
+    public function logout(Request $request)
+    {
+        $sessionKey = (string) config('raytech-log-viewer.security.session_key', 'raytech_log_viewer_authenticated');
+        $request->session()->forget($sessionKey);
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'status' => true,
+                'message' => 'Log viewer session terminated successfully.',
+            ]);
+        }
+
+        $namePrefix = config('raytech-log-viewer.route.name', 'log-viewer.');
+        return redirect()->route($namePrefix . 'index')->with('success', 'Session locked successfully.');
     }
 
     /**
@@ -230,6 +389,12 @@ class RaytechLogViewerController extends Controller
      */
     public function clear(Request $request)
     {
+        if ($this->isSecurityEnabled() && !$this->isSessionAuthenticated($request)) {
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json(['status' => false, 'message' => 'Unauthorized. Password verification required.'], 401);
+            }
+            abort(403, 'Unauthorized.');
+        }
         if (!config('raytech-log-viewer.features.allow_clear', true)) {
             if ($request->ajax() || $request->wantsJson()) {
                 return response()->json(['status' => false, 'message' => 'Clearing logs is disabled in configuration.'], 403);
@@ -289,6 +454,10 @@ class RaytechLogViewerController extends Controller
      */
     public function download(Request $request)
     {
+        if ($this->isSecurityEnabled() && !$this->isSessionAuthenticated($request)) {
+            abort(403, 'Unauthorized. Password verification required.');
+        }
+
         if (!config('raytech-log-viewer.features.allow_download', true)) {
             abort(403, 'Downloading log files is disabled in configuration.');
         }
@@ -316,6 +485,10 @@ class RaytechLogViewerController extends Controller
      */
     public function raw(Request $request)
     {
+        if ($this->isSecurityEnabled() && !$this->isSessionAuthenticated($request)) {
+            abort(403, 'Unauthorized. Password verification required.');
+        }
+
         if (!config('raytech-log-viewer.features.allow_raw', true)) {
             abort(403, 'Viewing raw log files is disabled in configuration.');
         }

@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/umesh240/log-viewer"><img src="https://img.shields.io/badge/version-1.2.7-brightgreen.svg" alt="Version"></a>
+  <a href="https://github.com/umesh240/log-viewer"><img src="https://img.shields.io/badge/version-1.3.0-brightgreen.svg" alt="Version"></a>
   <a href="https://packagist.org/packages/raytech/raytech-log-viewer"><img src="https://img.shields.io/badge/packagist-raytech%2Fraytech--log--viewer-orange.svg" alt="Packagist"></a>
   <a href="https://php.net"><img src="https://img.shields.io/badge/php-%5E8.0-8892BF.svg" alt="PHP Version"></a>
   <a href="https://laravel.com"><img src="https://img.shields.io/badge/laravel-%5E8.0%20%7C%20%5E9.0%20%7C%20%5E10.0%20%7C%20%5E11.0%20%7C%20%5E12.0-FF2D20.svg" alt="Laravel"></a>
@@ -76,6 +76,11 @@
   - Keep `/log-viewer` hidden with zero visible links on your navigation bar.
   - Press <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>X</kbd> (or <kbd>Cmd</kbd> + <kbd>Shift</kbd> + <kbd>X</kbd> on Mac) from any page in your application to open the viewer in a new tab!
   - Automatically injected via middleware or usable with the `@logViewerShortcut` Blade directive.
+- 🔒 **Password Protection & Session Lockout**:
+  - Optional password screen enabled via config or `.env` (`LOG_VIEWER_PASSWORD_PROTECTED=true`).
+  - Once verified, grants session access so you don't have to re-enter the password on every page open.
+  - Brute-force protection: Allows up to 3 failed attempts before automatically locking out and redirecting to the home page.
+  - Emergency Panic Hotkey: Press <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>D</kbd> anywhere to immediately destroy the authenticated session and close all open log viewer tabs across the browser!
 - 🛡️ **Flexible Security & Access Control**:
   - Works with any middleware (`web`, `auth`, custom role guards).
   - Supports programmatic closures (`RaytechLogViewer::auth(...)`) in your `AppServiceProvider`.
@@ -269,6 +274,11 @@ The published configuration file is located at `config/raytech-log-viewer.php`. 
 | `LOG_VIEWER_BACK_URL_NAME` | `Back To Home` | Back button text label |
 | `LOG_VIEWER_SHOW_BACK_BUTTON`| `true` | Show or hide the back button |
 | `LOG_VIEWER_SHOW_SERVER_LOGS`| `false` | Show or hide "Server Logs" section (Apache, Nginx, WAMP, PHP error logs) |
+| `LOG_VIEWER_PASSWORD_PROTECTED` | `false` | Enable or disable password verification screen |
+| `LOG_VIEWER_PASSWORD`        | `secret` | Access password required to view error logs |
+| `LOG_VIEWER_MAX_ATTEMPTS`    | `3`     | Max failed attempts before redirecting to home page |
+| `LOG_VIEWER_LOCKOUT_REDIRECT`| `/`     | Redirect URL on lockout (default: home page) |
+| `LOG_VIEWER_DESTROY_SHORTCUT_KEY` | `d` | Emergency hotkey key (<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>D</kbd>) to destroy session and close all open log tabs |
 | `LOG_VIEWER_SHORTCUT_ENABLED`| `false` | Enable global hotkey (<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>X</kbd>) across your app |
 | `LOG_VIEWER_SHORTCUT_KEY`    | `x`     | Character key for global hotkey |
 | `LOG_VIEWER_ALLOW_DOWNLOAD` | `true` | Allow downloading raw log files |
@@ -330,6 +340,7 @@ RaytechLogViewer::allowAll();
 | Action | Control / Shortcut |
 |---|---|
 | **Global Secret Hotkey** | <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>X</kbd> (opens log viewer in new tab from any page) |
+| **Emergency Panic Destroy** | <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>D</kbd> (destroys session and immediately closes all open log viewer tabs) |
 | **Toggle Details** | Click anywhere on a log entry row |
 | **Sort Order** | Click `Newest First` / `Oldest First` toggle button |
 | **Bulk Expand / Collapse** | Click `Expand All` / `Collapse All` toolbar button |

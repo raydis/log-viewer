@@ -18,6 +18,8 @@ if ($enabled) {
 
     $routeGroup->group(function () {
         Route::get('/', [RaytechLogViewerController::class, 'index'])->name('index');
+        Route::post('/auth', [RaytechLogViewerController::class, 'authenticate'])->name('auth');
+        Route::match(['get', 'post'], '/logout', [RaytechLogViewerController::class, 'logout'])->name('logout');
         Route::post('/clear', [RaytechLogViewerController::class, 'clear'])->name('clear');
         Route::get('/download', [RaytechLogViewerController::class, 'download'])->name('download');
         Route::get('/raw', [RaytechLogViewerController::class, 'raw'])->name('raw');

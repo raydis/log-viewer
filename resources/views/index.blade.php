@@ -204,6 +204,13 @@
                     <i class="fa fa-trash-alt"></i> <strong>Clear Log</strong>
                 </button>
             @endif
+
+            <!-- Lock / Destroy Session Button -->
+            @if(!empty($isSecurityEnabled))
+                <button type="button" class="btn-compact btn-danger-compact" id="btnLockSession" title="Lock & Destroy Session (Ctrl+Shift+D)">
+                    <i class="fa fa-lock"></i> <strong>Lock</strong>
+                </button>
+            @endif
         </div>
     </div>
 
@@ -481,6 +488,10 @@
             order: @json($order ?? 'desc'),
             indexUrl: @json(route($indexRoute)),
             clearUrl: @json(route($clearRoute)),
+            logoutUrl: @json(!empty($logoutRoute) ? route($logoutRoute) : ''),
+            isSecurityEnabled: @json(!empty($isSecurityEnabled)),
+            destroyShortcutKey: @json(config('raytech-log-viewer.security.destroy_shortcut.key', 'd')),
+            homeUrl: @json(config('raytech-log-viewer.theme.back_url', '/')),
             csrfToken: @json(csrf_token())
         };
     </script>

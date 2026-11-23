@@ -852,4 +852,77 @@
         }, 3500);
     }
 
+    // =========================================================================
+    // Emergency Session Destroy & Close All Log Viewer Tabs (Ctrl + Shift + D)
+    // =========================================================================
+    const syncChannel = window.BroadcastChannel ? new BroadcastChannel('raytech_log_viewer_sync') : null;
+
+    function handleEmergencyClose() {
+        try {
+            window.close();
+        } catch (e) {}
+        // Fallback: If browser blocks window.close(), redirect to home
+        window.location.href = config.homeUrl || '/';
+    }
+
+    if (syncChannel) {
+        syncChannel.onmessage = function(ev) {
+            if (ev.data && ev.data.action === 'destroy_and_close') {
+                handleEmergencyClose();
+            }
+        };
+    }
+
+    window.addEventListener('storage', function(e) {
+        if (e.key === 'raytech_log_viewer_session_destroyed') {
+            handleEmergencyClose();
+        }
+    });
+
+    function destroySessionAndCloseAll() {
+        showToast('Destroying session & closing...', 'error');
+
+        // Broadcast to all other open tabs
+        if (syncChannel) {
+            try {
+                syncChannel.postMessage({ action: 'destroy_and_close' });
+            } catch (e) {}
+        }
+        try {
+            localStorage.setItem('raytech_log_viewer_session_destroyed', Date.now().toString());
+        } catch (e) {}
+
+        // Send backend logout
+        if (config.logoutUrl) {
+            fetch(config.logoutUrl, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken,
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            }).catch(function() {});
+        }
+
+        setTimeout(handleEmergencyClose, 150);
+    }
+
+    // Emergency Hotkey Listener (Ctrl + Shift + D)
+    const destroyKey = (config.destroyShortcutKey || 'd').toLowerCase();
+    document.addEventListener('keydown', function(e) {
+        if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key && e.key.toLowerCase() === destroyKey) {
+            e.preventDefault();
+            destroySessionAndCloseAll();
+        }
+    });
+
+    // Toolbar Lock Button
+    const btnLock = document.getElementById('btnLockSession');
+    if (btnLock) {
+        btnLock.addEventListener('click', function(e) {
+            e.preventDefault();
+            destroySessionAndCloseAll();
+        });
+    }
+
 })();
