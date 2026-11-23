@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/umesh240/log-viewer"><img src="https://img.shields.io/badge/version-1.2.5-brightgreen.svg" alt="Version"></a>
+  <a href="https://github.com/umesh240/log-viewer"><img src="https://img.shields.io/badge/version-1.2.6-brightgreen.svg" alt="Version"></a>
   <a href="https://packagist.org/packages/raytech/raytech-log-viewer"><img src="https://img.shields.io/badge/packagist-raytech%2Fraytech--log--viewer-orange.svg" alt="Packagist"></a>
   <a href="https://php.net"><img src="https://img.shields.io/badge/php-%5E8.0-8892BF.svg" alt="PHP Version"></a>
   <a href="https://laravel.com"><img src="https://img.shields.io/badge/laravel-%5E8.0%20%7C%20%5E9.0%20%7C%20%5E10.0%20%7C%20%5E11.0%20%7C%20%5E12.0-FF2D20.svg" alt="Laravel"></a>
@@ -264,6 +264,7 @@ The published configuration file is located at `config/raytech-log-viewer.php`. 
 | `LOG_VIEWER_BACK_URL` | `/` | Back button link destination |
 | `LOG_VIEWER_BACK_URL_NAME` | `Back To Home` | Back button text label |
 | `LOG_VIEWER_SHOW_BACK_BUTTON`| `true` | Show or hide the back button |
+| `LOG_VIEWER_SHOW_SERVER_LOGS`| `false` | Show or hide "Server Logs" section (Apache, Nginx, WAMP, PHP error logs) |
 | `LOG_VIEWER_ALLOW_DOWNLOAD` | `true` | Allow downloading raw log files |
 | `LOG_VIEWER_ALLOW_CLEAR` | `true` | Allow clearing / truncating log files |
 | `LOG_VIEWER_ALLOW_RAW` | `true` | Allow viewing unformatted raw text in new tab |

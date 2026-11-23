@@ -68,6 +68,7 @@ return [
      * | Configure how and where the plugin discovers log files:
      * |
      * | - scan_laravel_logs: Automatically scan storage/logs/*.log
+     * | - show_server_logs: Show or hide Server Logs in the sidebar (default: false)
      * | - scan_server_logs: Automatically scan server logs (WAMP, Apache, Nginx, PHP, MySQL)
      * | - scan_php_error_log: Dynamically read ini_get('error_log')
      * | - extra_directories: Additional directories to scan for *.log files
@@ -77,8 +78,11 @@ return [
      */
     'logs' => [
         'scan_laravel_logs' => true,
-        'scan_server_logs' => true,
-        'scan_php_error_log' => true,
+        // Show or hide "Server Logs" (WAMP, Apache, Nginx, PHP error logs, MySQL, etc.)
+        // When true: discovers and shows Server Logs in sidebar. When false: hides Server Logs completely.
+        'show_server_logs' => env('LOG_VIEWER_SHOW_SERVER_LOGS', false),
+        'scan_server_logs' => env('LOG_VIEWER_SCAN_SERVER_LOGS', false),
+        'scan_php_error_log' => false,
         // Add additional folder paths to scan for .log files:
         // E.g.: [storage_path('logs/custom'), '/var/log/my-daemon']
         'extra_directories' => array_filter(explode(',', (string) env('LOG_VIEWER_DIRS', ''))),

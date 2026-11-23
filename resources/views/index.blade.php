@@ -244,31 +244,33 @@
                 </div>
 
                 <!-- Server Logs (WAMP / Apache / PHP / MySQL / Nginx / Linux) -->
-                <div class="sidebar-group-title" style="margin-top: 10px;">
-                    <span><i class="fa fa-server text-info"></i> Server Logs</span>
-                    <span style="font-weight: normal; opacity: 0.6;">{{ count($serverLogs) }}</span>
-                </div>
-                <div class="file-list-group" id="serverFilesList">
-                    @forelse($serverLogs as $f)
-                        <a href="{{ route($indexRoute, ['key' => $f['key'], 'lines' => $lineLimit]) }}" 
-                           class="file-item {{ $selectedFile && $selectedFile['key'] === $f['key'] ? 'active' : '' }}" 
-                           data-key="{{ $f['key'] }}" 
-                           data-name="{{ strtolower($f['name']) }}"
-                           title="{{ $f['path'] }}">
-                            <div class="file-item-left">
-                                <i class="fa {{ str_contains(strtolower($f['name']), 'error') ? 'fa-exclamation-circle text-danger' : 'fa-file-code' }}"></i>
-                                <span class="file-name">{{ $f['name'] }}</span>
+                @if(!empty($showServerLogs))
+                    <div class="sidebar-group-title" style="margin-top: 10px;">
+                        <span><i class="fa fa-server text-info"></i> Server Logs</span>
+                        <span style="font-weight: normal; opacity: 0.6;">{{ count($serverLogs) }}</span>
+                    </div>
+                    <div class="file-list-group" id="serverFilesList">
+                        @forelse($serverLogs as $f)
+                            <a href="{{ route($indexRoute, ['key' => $f['key'], 'lines' => $lineLimit]) }}" 
+                               class="file-item {{ $selectedFile && $selectedFile['key'] === $f['key'] ? 'active' : '' }}" 
+                               data-key="{{ $f['key'] }}" 
+                               data-name="{{ strtolower($f['name']) }}"
+                               title="{{ $f['path'] }}">
+                                <div class="file-item-left">
+                                    <i class="fa {{ str_contains(strtolower($f['name']), 'error') ? 'fa-exclamation-circle text-danger' : 'fa-file-code' }}"></i>
+                                    <span class="file-name">{{ $f['name'] }}</span>
+                                </div>
+                                <span class="file-size-tag {{ $f['is_empty'] ? 'empty' : ($f['size'] > 10485760 ? 'huge' : ($f['size'] > 1048576 ? 'large' : '')) }}">
+                                    {{ $f['size_formatted'] }}
+                                </span>
+                            </a>
+                        @empty
+                            <div style="padding: 6px 12px; font-size: 11px; color: var(--text-dim); font-style: italic;">
+                                No server log files found.
                             </div>
-                            <span class="file-size-tag {{ $f['is_empty'] ? 'empty' : ($f['size'] > 10485760 ? 'huge' : ($f['size'] > 1048576 ? 'large' : '')) }}">
-                                {{ $f['size_formatted'] }}
-                            </span>
-                        </a>
-                    @empty
-                        <div style="padding: 6px 12px; font-size: 11px; color: var(--text-dim); font-style: italic;">
-                            No server log files found.
-                        </div>
-                    @endforelse
-                </div>
+                        @endforelse
+                    </div>
+                @endif
             </div>
 
             <div class="sidebar-footer">

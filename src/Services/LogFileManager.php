@@ -82,13 +82,34 @@ class LogFileManager
     }
 
     /**
+     * Check if server logs scanning and display is enabled in configuration.
+     * Defaults to false.
+     *
+     * @return bool
+     */
+    public function isServerLogsEnabled(): bool
+    {
+        $showServer = config('raytech-log-viewer.logs.show_server_logs');
+        if ($showServer !== null) {
+            return (bool) $showServer;
+        }
+
+        $scanServer = config('raytech-log-viewer.logs.scan_server_logs');
+        if ($scanServer !== null) {
+            return (bool) $scanServer;
+        }
+
+        return false;
+    }
+
+    /**
      * Dynamically resolve server log directories without hardcoding drive letters.
      *
      * @return array
      */
     public function getServerLogDirectories(): array
     {
-        if (!config('raytech-log-viewer.logs.scan_server_logs', true)) {
+        if (!$this->isServerLogsEnabled()) {
             return [];
         }
 
@@ -203,56 +224,58 @@ class LogFileManager
         }
 
         // 2. Server Logs (WAMP / Apache / PHP / MySQL / Nginx)
-        $serverDirs = $this->getServerLogDirectories();
-        foreach ($serverDirs as $dir) {
-            $files = glob(rtrim($dir, '/\\') . '/*.log');
-            if ($files) {
-                foreach ($files as $filePath) {
-                    $realPath = realpath($filePath) ?: $filePath;
-                    $key = md5('server_' . $realPath);
-                    if (isset($logFiles[$key])) {
-                        continue;
-                    }
-                    $fileSize = file_exists($realPath) ? filesize($realPath) : 0;
-                    $mtime = file_exists($realPath) ? filemtime($realPath) : 0;
+        if ($this->isServerLogsEnabled()) {
+            $serverDirs = $this->getServerLogDirectories();
+            foreach ($serverDirs as $dir) {
+                $files = glob(rtrim($dir, '/\\') . '/*.log');
+                if ($files) {
+                    foreach ($files as $filePath) {
+                        $realPath = realpath($filePath) ?: $filePath;
+                        $key = md5('server_' . $realPath);
+                        if (isset($logFiles[$key])) {
+                            continue;
+                        }
+                        $fileSize = file_exists($realPath) ? filesize($realPath) : 0;
+                        $mtime = file_exists($realPath) ? filemtime($realPath) : 0;
 
-                    $logFiles[$key] = [
-                        'key' => $key,
-                        'name' => basename($realPath),
-                        'category' => 'Server Logs',
-                        'type' => 'server',
-                        'path' => $realPath,
-                        'size' => $fileSize,
-                        'size_formatted' => $this->formatBytes($fileSize),
-                        'modified' => $mtime ? date('Y-m-d H:i:s', $mtime) : '-',
-                        'modified_timestamp' => $mtime,
-                        'is_empty' => $fileSize === 0,
-                    ];
+                        $logFiles[$key] = [
+                            'key' => $key,
+                            'name' => basename($realPath),
+                            'category' => 'Server Logs',
+                            'type' => 'server',
+                            'path' => $realPath,
+                            'size' => $fileSize,
+                            'size_formatted' => $this->formatBytes($fileSize),
+                            'modified' => $mtime ? date('Y-m-d H:i:s', $mtime) : '-',
+                            'modified_timestamp' => $mtime,
+                            'is_empty' => $fileSize === 0,
+                        ];
+                    }
                 }
             }
-        }
 
-        // Check if PHP error log is explicitly located somewhere else
-        if (config('raytech-log-viewer.logs.scan_php_error_log', true)) {
-            $phpErrorLog = ini_get('error_log');
-            if (!empty($phpErrorLog) && file_exists($phpErrorLog)) {
-                $realPath = realpath($phpErrorLog) ?: $phpErrorLog;
-                $key = md5('server_' . $realPath);
-                if (!isset($logFiles[$key])) {
-                    $fileSize = filesize($realPath);
-                    $mtime = filemtime($realPath);
-                    $logFiles[$key] = [
-                        'key' => $key,
-                        'name' => basename($realPath),
-                        'category' => 'Server Logs',
-                        'type' => 'server',
-                        'path' => $realPath,
-                        'size' => $fileSize,
-                        'size_formatted' => $this->formatBytes($fileSize),
-                        'modified' => $mtime ? date('Y-m-d H:i:s', $mtime) : '-',
-                        'modified_timestamp' => $mtime,
-                        'is_empty' => $fileSize === 0,
-                    ];
+            // Check if PHP error log is explicitly located somewhere else
+            if (config('raytech-log-viewer.logs.scan_php_error_log', false)) {
+                $phpErrorLog = ini_get('error_log');
+                if (!empty($phpErrorLog) && file_exists($phpErrorLog)) {
+                    $realPath = realpath($phpErrorLog) ?: $phpErrorLog;
+                    $key = md5('server_' . $realPath);
+                    if (!isset($logFiles[$key])) {
+                        $fileSize = filesize($realPath);
+                        $mtime = filemtime($realPath);
+                        $logFiles[$key] = [
+                            'key' => $key,
+                            'name' => basename($realPath),
+                            'category' => 'Server Logs',
+                            'type' => 'server',
+                            'path' => $realPath,
+                            'size' => $fileSize,
+                            'size_formatted' => $this->formatBytes($fileSize),
+                            'modified' => $mtime ? date('Y-m-d H:i:s', $mtime) : '-',
+                            'modified_timestamp' => $mtime,
+                            'is_empty' => $fileSize === 0,
+                        ];
+                    }
                 }
             }
         }

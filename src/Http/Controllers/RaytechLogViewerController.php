@@ -206,6 +206,7 @@ class RaytechLogViewerController extends Controller
             'allFiles' => $allFiles,
             'laravelLogs' => $laravelLogs,
             'serverLogs' => $serverLogs,
+            'showServerLogs' => $this->fileManager->isServerLogsEnabled(),
             'selectedFile' => $selectedFile,
             'parsedLines' => $parsedLines,
             'dateGroups' => $dateGroups,
