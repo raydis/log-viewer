@@ -123,7 +123,7 @@ return [
         'lines_options' => [100, 250, 500, 1000, 2500, 5000],
         'auto_refresh_default' => 10000,
         'max_read_bytes' => 4194304,  // 4MB tail buffer
-        'default_order' => env('RAYTECH_LOG_VIEWER_ORDER', 'desc'),  // 'desc' = latest log on top, 'asc' = oldest first
+        'default_order' => env('LOG_VIEWER_ORDER', 'desc'),  // 'desc' = latest log on top, 'asc' = oldest first
     ],
 
     /*
@@ -180,9 +180,9 @@ return [
         'max_attempts' => (int) env('LOG_VIEWER_MAX_ATTEMPTS', 3),
         'lockout_redirect' => env('LOG_VIEWER_LOCKOUT_REDIRECT', '/'),
         'lockout_duration' => (int) env('LOG_VIEWER_LOCKOUT_DURATION', 60),
-        'session_key' => 'raytech_log_viewer_authenticated',
-        'attempts_key' => 'raytech_log_viewer_failed_attempts',
-        'lockout_key' => 'raytech_log_viewer_locked_until',
+        'session_key' => 'log_viewer_authenticated',
+        'attempts_key' => 'log_viewer_failed_attempts',
+        'lockout_key' => 'log_viewer_locked_until',
         'destroy_shortcut' => [
             'enabled' => env('LOG_VIEWER_DESTROY_SHORTCUT_ENABLED', true),
             'key' => env('LOG_VIEWER_DESTROY_SHORTCUT_KEY', 'd'),
@@ -194,18 +194,22 @@ return [
 
     /*
      * |--------------------------------------------------------------------------
-     * | Asset CDN Sources
+     * | Asset Sources (Local Bundled vs CDN)
      * |--------------------------------------------------------------------------
      * |
-     * | External assets for FontAwesome icons and SweetAlert2 dialogs.
-     * | By default, high-speed CDN URLs are used so the plugin works instantly
-     * | on any fresh Laravel installation without requiring local asset compiling.
+     * | External or local assets for FontAwesome icons and SweetAlert2 dialogs.
+     * | By default, use_cdn is false and assets are bundled locally in the plugin:
+     * | - Zero external network / CDN dependency.
+     * | - 100% offline & intranet compatible.
+     * | - Scoped exclusively to log viewer routes to prevent conflicts with host app libraries.
+     * |
+     * | If you prefer external CDN links, set 'use_cdn' => true.
      * |
      */
     'assets' => [
-        'use_cdn' => true,
-        'fontawesome_css' => 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css',
-        'sweetalert2_css' => 'https://cdnjs.cloudflare.com/ajax/libs/limonte-sweetalert2/11.10.5/sweetalert2.min.css',
-        'sweetalert2_js' => 'https://cdnjs.cloudflare.com/ajax/libs/limonte-sweetalert2/11.10.5/sweetalert2.all.min.js',
+        'use_cdn' => env('LOG_VIEWER_USE_CDN', false),
+        'fontawesome_css' => env('LOG_VIEWER_FONTAWESOME_CSS', 'vendor/fontawesome-free/css/all.min.css'),
+        'sweetalert2_css' => env('LOG_VIEWER_SWEETALERT2_CSS', 'vendor/sweetalert2/sweetalert2.min.css'),
+        'sweetalert2_js' => env('LOG_VIEWER_SWEETALERT2_JS', 'vendor/sweetalert2/sweetalert2.all.min.js'),
     ],
 ];

@@ -189,7 +189,7 @@ class RaytechLogViewerController extends Controller
 
         return view('raytech-log-viewer::auth', [
             'themeConfig' => config('raytech-log-viewer.theme', []),
-            'assets' => config('raytech-log-viewer.assets', []),
+            'assets' => $this->resolveConfiguredAssets(),
             'logoUrl' => $this->resolveLogoUrl(),
             'version' => RaytechLogViewer::VERSION,
             'attempts' => $attempts,
@@ -293,7 +293,7 @@ class RaytechLogViewerController extends Controller
             'security' => config('raytech-log-viewer.security', []),
             'isSecurityEnabled' => $this->isSecurityEnabled(),
             'logoutRoute' => $namePrefix . 'logout',
-            'assets' => config('raytech-log-viewer.assets', []),
+            'assets' => $this->resolveConfiguredAssets(),
             'logoUrl' => $this->resolveLogoUrl(),
             'version' => RaytechLogViewer::VERSION,
         ]);
@@ -433,7 +433,7 @@ class RaytechLogViewerController extends Controller
                 ]);
             }
 
-            $routePrefix = config('raytech-log-viewer.route.name', 'raytech-log-viewer.') . 'index';
+            $routePrefix = config('raytech-log-viewer.route.name', 'log-viewer.') . 'index';
             return redirect()->route($routePrefix, ['key' => $targetFile['key']])->with('success', $msg);
         } else {
             $msg = "Unable to clear '{$targetFile['name']}'. File may be locked by a running process or requires write permissions.";
@@ -441,7 +441,7 @@ class RaytechLogViewerController extends Controller
                 return response()->json(['status' => false, 'message' => $msg], 403);
             }
 
-            $routePrefix = config('raytech-log-viewer.route.name', 'raytech-log-viewer.') . 'index';
+            $routePrefix = config('raytech-log-viewer.route.name', 'log-viewer.') . 'index';
             return redirect()->route($routePrefix, ['key' => $targetFile['key']])->with('error', $msg);
         }
     }
@@ -519,7 +519,7 @@ class RaytechLogViewerController extends Controller
             ?: env('RAYTECH_LOG_VIEWER_LOGO')
             ?: env('RAYTECH_LOG_LOGOPATH');
 
-        $namePrefix = config('raytech-log-viewer.route.name', 'raytech-log-viewer.');
+        $namePrefix = config('raytech-log-viewer.route.name', 'log-viewer.');
 
         // If no logo specified or empty
         if (empty($rawLogo)) {
@@ -561,7 +561,87 @@ class RaytechLogViewerController extends Controller
     }
 
     /**
-     * Serve static package assets (css, js, images) directly if not published.
+     * Resolve an asset relative or remote path to a browser-loadable URL.
+     *
+     * @param string|null $path
+     * @return string|null
+     */
+    public function resolveAssetUrl(?string $path): ?string
+    {
+        if (empty($path)) {
+            return null;
+        }
+
+        // External URLs or protocol-relative URLs
+        if (preg_match('#^(https?:)?//#i', $path) || str_starts_with($path, 'data:')) {
+            return $path;
+        }
+
+        $trimmed = ltrim($path, '/\\');
+        $namePrefix = config('raytech-log-viewer.route.name', 'log-viewer.');
+
+        // 1. Check published asset in public_path
+        if (function_exists('public_path')) {
+            if (file_exists(public_path('vendor/raytech-log-viewer/' . $trimmed))) {
+                return asset('vendor/raytech-log-viewer/' . $trimmed);
+            }
+            if (file_exists(public_path($trimmed))) {
+                return asset($trimmed);
+            }
+        }
+
+        // 2. Fallback to package asset streaming route
+        try {
+            return route($namePrefix . 'asset', ['file' => $trimmed]);
+        } catch (\Throwable $e) {
+            return asset($trimmed);
+        }
+    }
+
+    /**
+     * Resolve all configured assets (FontAwesome, SweetAlert2, etc.) to valid browser URLs.
+     *
+     * @return array
+     */
+    protected function resolveConfiguredAssets(): array
+    {
+        $raw = (array) config('raytech-log-viewer.assets', []);
+        $useCdn = (bool) ($raw['use_cdn'] ?? false);
+
+        if ($useCdn) {
+            $faCss = $raw['fontawesome_css'] ?? 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css';
+            if ($faCss === 'vendor/fontawesome-free/css/all.min.css') {
+                $faCss = 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css';
+            }
+
+            $swalCss = $raw['sweetalert2_css'] ?? 'https://cdnjs.cloudflare.com/ajax/libs/limonte-sweetalert2/11.10.5/sweetalert2.min.css';
+            if ($swalCss === 'vendor/sweetalert2/sweetalert2.min.css') {
+                $swalCss = 'https://cdnjs.cloudflare.com/ajax/libs/limonte-sweetalert2/11.10.5/sweetalert2.min.css';
+            }
+
+            $swalJs = $raw['sweetalert2_js'] ?? 'https://cdnjs.cloudflare.com/ajax/libs/limonte-sweetalert2/11.10.5/sweetalert2.all.min.js';
+            if ($swalJs === 'vendor/sweetalert2/sweetalert2.all.min.js') {
+                $swalJs = 'https://cdnjs.cloudflare.com/ajax/libs/limonte-sweetalert2/11.10.5/sweetalert2.all.min.js';
+            }
+
+            return [
+                'use_cdn' => true,
+                'fontawesome_css' => $this->resolveAssetUrl($faCss),
+                'sweetalert2_css' => $this->resolveAssetUrl($swalCss),
+                'sweetalert2_js' => $this->resolveAssetUrl($swalJs),
+            ];
+        }
+
+        return [
+            'use_cdn' => false,
+            'fontawesome_css' => $this->resolveAssetUrl($raw['fontawesome_css'] ?? 'vendor/fontawesome-free/css/all.min.css'),
+            'sweetalert2_css' => $this->resolveAssetUrl($raw['sweetalert2_css'] ?? 'vendor/sweetalert2/sweetalert2.min.css'),
+            'sweetalert2_js' => $this->resolveAssetUrl($raw['sweetalert2_js'] ?? 'vendor/sweetalert2/sweetalert2.all.min.js'),
+        ];
+    }
+
+    /**
+     * Serve static package assets (css, js, images, fonts) directly if not published.
      *
      * @param string $file
      * @return \Symfony\Component\HttpFoundation\BinaryFileResponse|\Illuminate\Http\Response
@@ -574,15 +654,15 @@ class RaytechLogViewerController extends Controller
 
         $targetPath = null;
 
-        // Resolve package source asset
-        $packagePublic = realpath(__DIR__ . '/../../public');
-        $candidate = realpath(__DIR__ . '/../../public/' . $file);
+        // Resolve package source asset (3 levels up from Http/Controllers is package root)
+        $packagePublic = realpath(dirname(__DIR__, 3) . '/public');
+        $candidate = $packagePublic ? realpath($packagePublic . '/' . $file) : null;
         $packageAsset = ($packagePublic && $candidate && str_starts_with($candidate, $packagePublic) && is_file($candidate))
             ? $candidate
             : null;
 
         if (!$packageAsset && ($file === 'default_logo.jpg' || $file === 'img/default_logo.jpg')) {
-            $logoCandidate = realpath(__DIR__ . '/../../public/img/default_logo.jpg');
+            $logoCandidate = $packagePublic ? realpath($packagePublic . '/img/default_logo.jpg') : null;
             if ($logoCandidate && is_file($logoCandidate)) {
                 $packageAsset = $logoCandidate;
             }
@@ -626,6 +706,8 @@ class RaytechLogViewerController extends Controller
             'woff'  => 'font/woff',
             'woff2' => 'font/woff2',
             'ttf'   => 'font/ttf',
+            'eot'   => 'application/vnd.ms-fontobject',
+            'otf'   => 'font/otf',
         ];
 
         $contentType = $contentTypes[$extension] ?? 'application/octet-stream';

@@ -11,7 +11,9 @@
         <link rel="shortcut icon" type="image/jpeg" href="{{ $logoUrl }}">
     @endif
 
-    <link rel="stylesheet" href="{{ $assets['fontawesome_css'] ?? 'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css' }}">
+    @if(!empty($assets['fontawesome_css']))
+        <link rel="stylesheet" href="{{ $assets['fontawesome_css'] }}">
+    @endif
     <link rel="stylesheet" href="{{ route($assetRoute, ['file' => 'css/raytech-log-viewer.css']) }}?v={{ $version }}">
 
     <style>
