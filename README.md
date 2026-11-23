@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/umesh240/log-viewer"><img src="https://img.shields.io/badge/version-1.3.2-brightgreen.svg" alt="Version"></a>
+  <a href="https://github.com/umesh240/log-viewer"><img src="https://img.shields.io/badge/version-1.3.3-brightgreen.svg" alt="Version"></a>
   <a href="https://packagist.org/packages/raytech/raytech-log-viewer"><img src="https://img.shields.io/badge/packagist-raytech%2Fraytech--log--viewer-orange.svg" alt="Packagist"></a>
   <a href="https://php.net"><img src="https://img.shields.io/badge/php-%5E8.0-8892BF.svg" alt="PHP Version"></a>
   <a href="https://laravel.com"><img src="https://img.shields.io/badge/laravel-%5E8.0%20%7C%20%5E9.0%20%7C%20%5E10.0%20%7C%20%5E11.0%20%7C%20%5E12.0-FF2D20.svg" alt="Laravel"></a>
@@ -276,7 +276,7 @@ The published configuration file is located at `config/raytech-log-viewer.php`. 
 | `LOG_VIEWER_SHOW_SERVER_LOGS`| `false` | Show or hide "Server Logs" section (Apache, Nginx, WAMP, PHP error logs) |
 | `LOG_VIEWER_USE_CDN`         | `false` | Use external CDNs (`true`) or 100% offline bundled local assets (`false`) |
 | `LOG_VIEWER_PASSWORD_PROTECTED` | `false` | Enable or disable password verification screen |
-| `LOG_VIEWER_PASSWORD`        | `secret` | Access password (validated via cryptographic hash comparison: Bcrypt, Argon2, SHA-256, or encrypted) |
+| `LOG_VIEWER_PASSWORD`        | `test26 hash` | Hashed password (default: hash of `test26`). Validated strictly via `Hash::check()`. Generate via `php artisan raytech-log-viewer:hash <password>` |
 | `LOG_VIEWER_MAX_ATTEMPTS`    | `3`     | Max failed attempts before redirecting to home page |
 | `LOG_VIEWER_LOCKOUT_REDIRECT`| `/`     | Redirect URL on lockout (default: home page) |
 | `LOG_VIEWER_DESTROY_SHORTCUT_KEY` | `d` | Emergency hotkey key (<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>D</kbd>) to destroy session and close all open log tabs |

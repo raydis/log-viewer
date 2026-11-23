@@ -212,6 +212,7 @@
     <script>
         (function() {
             try {
+                var savedTheme = localStorage.getItem('raytech_log_viewer_theme');
                 var savedTheme = localStorage.getItem('log_viewer_theme') || localStorage.getItem('log_theme') || localStorage.getItem('raytech_log_viewer_theme');
                 if (savedTheme) {
                     document.documentElement.setAttribute('data-theme', savedTheme);

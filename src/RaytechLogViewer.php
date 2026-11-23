@@ -10,7 +10,7 @@ class RaytechLogViewer
     /**
      * Current package version.
      */
-    public const VERSION = '1.3.2';
+    public const VERSION = '1.3.3';
 
     /**
      * Optional custom access restriction callback(s) or middleware(s).
@@ -194,49 +194,49 @@ class RaytechLogViewer
         $csrfToken = function_exists('csrf_token') ? csrf_token() : '';
 
         return <<<HTML
-<!-- RayTech Log Viewer Global Hotkey (Ctrl+Shift+{$key}) & Emergency Close (Ctrl+Shift+{$destroyKey}) -->
-<script>
-(function() {
-    if (window.__raytechLogViewerShortcutBound) return;
-    window.__raytechLogViewerShortcutBound = true;
-    document.addEventListener('keydown', function(e) {
-        var ctrlMatch = {$ctrlRequired} ? (e.ctrlKey || e.metaKey) : (!e.ctrlKey && !e.metaKey);
-        var shiftMatch = {$shiftRequired} ? e.shiftKey : !e.shiftKey;
-        var altMatch = {$altRequired} ? e.altKey : !e.altKey;
-        var keyMatch = (e.key && e.key.toLowerCase() === '{$key}');
+            <!-- RayTech Log Viewer Global Hotkey (Ctrl+Shift+{$key}) & Emergency Close (Ctrl+Shift+{$destroyKey}) -->
+            <script>
+            (function() {
+                if (window.__raytechLogViewerShortcutBound) return;
+                window.__raytechLogViewerShortcutBound = true;
+                document.addEventListener('keydown', function(e) {
+                    var ctrlMatch = {$ctrlRequired} ? (e.ctrlKey || e.metaKey) : (!e.ctrlKey && !e.metaKey);
+                    var shiftMatch = {$shiftRequired} ? e.shiftKey : !e.shiftKey;
+                    var altMatch = {$altRequired} ? e.altKey : !e.altKey;
+                    var keyMatch = (e.key && e.key.toLowerCase() === '{$key}');
 
-        // Open Log Viewer in new tab
-        if (ctrlMatch && shiftMatch && altMatch && keyMatch) {
-            if (!window.location.pathname.includes('/{$routePrefix}')) {
-                e.preventDefault();
-                window.open('{$url}', '{$target}');
-            }
-        }
-
-        // Emergency Destroy Session & Close all log tabs (Ctrl+Shift+{$destroyKey})
-        if ({$destroyEnabled}) {
-            if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key && e.key.toLowerCase() === '{$destroyKey}') {
-                e.preventDefault();
-                try {
-                    if (window.BroadcastChannel) {
-                        new BroadcastChannel('log_viewer_sync').postMessage({ action: 'destroy_and_close' });
-                    }
-                    localStorage.setItem('log_viewer_session_destroyed', Date.now().toString());
-                    localStorage.setItem('raytech_log_viewer_session_destroyed', Date.now().toString());
-                    fetch('{$logoutUrl}', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': '{$csrfToken}',
-                            'X-Requested-With': 'XMLHttpRequest'
+                    // Open Log Viewer in new tab
+                    if (ctrlMatch && shiftMatch && altMatch && keyMatch) {
+                        if (!window.location.pathname.includes('/{$routePrefix}')) {
+                            e.preventDefault();
+                            window.open('{$url}', '{$target}');
                         }
-                    }).catch(function() {});
-                } catch(err) {}
-            }
-        }
-    });
-})();
-</script>
-HTML;
+                    }
+
+                    // Emergency Destroy Session & Close all log tabs (Ctrl+Shift+{$destroyKey})
+                    if ({$destroyEnabled}) {
+                        if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key && e.key.toLowerCase() === '{$destroyKey}') {
+                            e.preventDefault();
+                            try {
+                                if (window.BroadcastChannel) {
+                                    new BroadcastChannel('log_viewer_sync').postMessage({ action: 'destroy_and_close' });
+                                }
+                                localStorage.setItem('log_viewer_session_destroyed', Date.now().toString());
+                                localStorage.setItem('raytech_log_viewer_session_destroyed', Date.now().toString());
+                                fetch('{$logoutUrl}', {
+                                    method: 'POST',
+                                    headers: {
+                                        'Content-Type': 'application/json',
+                                        'X-CSRF-TOKEN': '{$csrfToken}',
+                                        'X-Requested-With': 'XMLHttpRequest'
+                                    }
+                                }).catch(function() {});
+                            } catch(err) {}
+                        }
+                    }
+                });
+            })();
+            </script>
+            HTML;
     }
 }

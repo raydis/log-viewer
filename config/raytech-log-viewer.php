@@ -167,10 +167,10 @@ return [
      * |   destroys the session and closes all open log viewer tabs!
      * |
      * | - enabled: Enable password protection (default: false)
-     * | - password: Password required to access log viewer. Always validated via cryptographic
-     * |   hash comparison (never plain string comparison). Supports Bcrypt ($2y$), Argon2,
-     * |   SHA-256, SHA-512, or encrypted strings. Generate via:
-     * |   `php artisan raytech-log-viewer:hash <password>`
+     * | - password: Hashed password required to access log viewer.
+     * |   Always stored as a hashed/encrypted string and validated strictly using
+     * |   the `Hash::check()` method. By default, contains the pre-computed hash for 'test26'.
+     * |   Generate your own custom hash via: `php artisan raytech-log-viewer:hash <password>`
      * | - max_attempts: Maximum failed password attempts before lockout (default: 3)
      * | - lockout_redirect: URL to redirect user when max attempts are exceeded (default: '/')
      * | - lockout_duration: Lockout duration in seconds before attempts reset (default: 60)
@@ -182,7 +182,7 @@ return [
      */
     'security' => [
         'enabled' => env('LOG_VIEWER_PASSWORD_PROTECTED', false),
-        'password' => env('LOG_VIEWER_PASSWORD', 'secret'),
+        'password' => env('LOG_VIEWER_PASSWORD', '$2y$10$ZfUboNTMgBUhU5kVfoWyTu8X4B4WMr7trhWrjZGnpm4u9PLiDfv2W'), // Default hash of 'test26'
         'max_attempts' => (int) env('LOG_VIEWER_MAX_ATTEMPTS', 3),
         'lockout_redirect' => env('LOG_VIEWER_LOCKOUT_REDIRECT', '/'),
         'lockout_duration' => (int) env('LOG_VIEWER_LOCKOUT_DURATION', 60),

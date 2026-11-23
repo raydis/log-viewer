@@ -358,9 +358,8 @@ class RaytechLogViewerController extends Controller
     }
 
     /**
-     * Verify user input password against the configured password using secure hash methods.
-     * Supports Laravel Hash (bcrypt, argon2), SHA-256/512, Encrypted payloads, and timing-safe hash comparison.
-     * Never performs raw/plain string comparison.
+     * Verify user input password against the configured hashed password using Hash::check.
+     * Always validates with Hash::check method against the encrypted/hashed password.
      *
      * @param string $inputPassword
      * @param string $configuredPassword
@@ -372,15 +371,21 @@ class RaytechLogViewerController extends Controller
             return false;
         }
 
-        // 1. Standard Laravel / PHP Password Hash (Bcrypt, Argon2, etc.)
+        // 1. Primary validation: Laravel Hash::check()
         try {
-            $info = password_get_info($configuredPassword);
-            if (!empty($info['algo']) && ($info['algoName'] ?? 'unknown') !== 'unknown') {
-                return \Illuminate\Support\Facades\Hash::check($inputPassword, $configuredPassword);
+            if (\Illuminate\Support\Facades\Hash::check($inputPassword, $configuredPassword)) {
+                return true;
             }
         } catch (\Throwable $e) {}
 
-        // 2. SHA-256 or SHA-512 Hex Hash (e.g. 64 or 128 hex characters)
+        // 2. Direct password_verify fallback for standard PHP Bcrypt/Argon2 hashes
+        try {
+            if (function_exists('password_verify') && password_verify($inputPassword, $configuredPassword)) {
+                return true;
+            }
+        } catch (\Throwable $e) {}
+
+        // 3. Optional fallback for SHA-256 or SHA-512 hex hashes
         $len = strlen($configuredPassword);
         if (($len === 64 || $len === 128) && ctype_xdigit($configuredPassword)) {
             $algo = ($len === 64) ? 'sha256' : 'sha512';
@@ -388,31 +393,6 @@ class RaytechLogViewerController extends Controller
                 return true;
             }
         }
-
-        // 3. Encrypted with Laravel Encrypter (Crypt::encryptString)
-        try {
-            if (str_starts_with($configuredPassword, 'eyJ') || str_contains($configuredPassword, 'mac')) {
-                $decrypted = \Illuminate\Support\Facades\Crypt::decryptString($configuredPassword);
-                if (hash_equals(hash('sha256', $decrypted), hash('sha256', $inputPassword))) {
-                    return true;
-                }
-            }
-        } catch (\Throwable $e) {}
-
-        // 4. Cryptographic timing-safe hash comparison (never compares raw plain strings)
-        $hashedConfigured = hash('sha256', $configuredPassword);
-        $hashedInput = hash('sha256', $inputPassword);
-
-        if (hash_equals($hashedConfigured, $hashedInput)) {
-            return true;
-        }
-
-        // 5. Fallback Hash::check in case custom hash driver is in use
-        try {
-            if (\Illuminate\Support\Facades\Hash::check($inputPassword, $configuredPassword)) {
-                return true;
-            }
-        } catch (\Throwable $e) {}
 
         return false;
     }
