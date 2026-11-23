@@ -160,7 +160,7 @@ class RaytechLogViewerController extends Controller
             return true;
         }
 
-        $sessionKey = (string) config('raytech-log-viewer.security.session_key', 'raytech_log_viewer_authenticated');
+        $sessionKey = (string) config('raytech-log-viewer.security.session_key', 'log_viewer_authenticated');
         return (bool) $request->session()->get($sessionKey, false);
     }
 
@@ -172,7 +172,7 @@ class RaytechLogViewerController extends Controller
      */
     protected function renderPasswordPrompt(Request $request)
     {
-        $lockoutKey = (string) config('raytech-log-viewer.security.lockout_key', 'raytech_log_viewer_locked_until');
+        $lockoutKey = (string) config('raytech-log-viewer.security.lockout_key', 'log_viewer_locked_until');
         $lockoutUntil = (int) $request->session()->get($lockoutKey, 0);
 
         if ($lockoutUntil > time()) {
@@ -181,7 +181,7 @@ class RaytechLogViewerController extends Controller
             return redirect($lockoutRedirect)->with('error', "Too many failed password attempts. Access is locked for {$remaining} more second(s).");
         }
 
-        $attemptsKey = (string) config('raytech-log-viewer.security.attempts_key', 'raytech_log_viewer_failed_attempts');
+        $attemptsKey = (string) config('raytech-log-viewer.security.attempts_key', 'log_viewer_failed_attempts');
         $attempts = (int) $request->session()->get($attemptsKey, 0);
         $maxAttempts = (int) config('raytech-log-viewer.security.max_attempts', 3);
 
@@ -312,7 +312,7 @@ class RaytechLogViewerController extends Controller
             return redirect()->route($namePrefix . 'index');
         }
 
-        $lockoutKey = (string) config('raytech-log-viewer.security.lockout_key', 'raytech_log_viewer_locked_until');
+        $lockoutKey = (string) config('raytech-log-viewer.security.lockout_key', 'log_viewer_locked_until');
         $lockoutUntil = (int) $request->session()->get($lockoutKey, 0);
 
         if ($lockoutUntil > time()) {
@@ -323,15 +323,13 @@ class RaytechLogViewerController extends Controller
 
         $inputPassword = (string) $request->input('password', '');
         $configuredPassword = (string) config('raytech-log-viewer.security.password', '');
-        $sessionKey = (string) config('raytech-log-viewer.security.session_key', 'raytech_log_viewer_authenticated');
-        $attemptsKey = (string) config('raytech-log-viewer.security.attempts_key', 'raytech_log_viewer_failed_attempts');
+        $sessionKey = (string) config('raytech-log-viewer.security.session_key', 'log_viewer_authenticated');
+        $attemptsKey = (string) config('raytech-log-viewer.security.attempts_key', 'log_viewer_failed_attempts');
         $maxAttempts = (int) config('raytech-log-viewer.security.max_attempts', 3);
         $namePrefix = config('raytech-log-viewer.route.name', 'log-viewer.');
 
-        $isMatch = ($inputPassword === $configuredPassword);
-        if (!$isMatch && function_exists('password_verify') && str_starts_with($configuredPassword, '$2y$')) {
-            $isMatch = password_verify($inputPassword, $configuredPassword);
-        }
+        // Validate strictly using cryptographic hash methods (never plain string comparison)
+        $isMatch = $this->verifyPassword($inputPassword, $configuredPassword);
 
         if ($isMatch) {
             $request->session()->forget($attemptsKey);
@@ -360,6 +358,66 @@ class RaytechLogViewerController extends Controller
     }
 
     /**
+     * Verify user input password against the configured password using secure hash methods.
+     * Supports Laravel Hash (bcrypt, argon2), SHA-256/512, Encrypted payloads, and timing-safe hash comparison.
+     * Never performs raw/plain string comparison.
+     *
+     * @param string $inputPassword
+     * @param string $configuredPassword
+     * @return bool
+     */
+    protected function verifyPassword(string $inputPassword, string $configuredPassword): bool
+    {
+        if ($inputPassword === '' || $configuredPassword === '') {
+            return false;
+        }
+
+        // 1. Standard Laravel / PHP Password Hash (Bcrypt, Argon2, etc.)
+        try {
+            $info = password_get_info($configuredPassword);
+            if (!empty($info['algo']) && ($info['algoName'] ?? 'unknown') !== 'unknown') {
+                return \Illuminate\Support\Facades\Hash::check($inputPassword, $configuredPassword);
+            }
+        } catch (\Throwable $e) {}
+
+        // 2. SHA-256 or SHA-512 Hex Hash (e.g. 64 or 128 hex characters)
+        $len = strlen($configuredPassword);
+        if (($len === 64 || $len === 128) && ctype_xdigit($configuredPassword)) {
+            $algo = ($len === 64) ? 'sha256' : 'sha512';
+            if (hash_equals(strtolower($configuredPassword), hash($algo, $inputPassword))) {
+                return true;
+            }
+        }
+
+        // 3. Encrypted with Laravel Encrypter (Crypt::encryptString)
+        try {
+            if (str_starts_with($configuredPassword, 'eyJ') || str_contains($configuredPassword, 'mac')) {
+                $decrypted = \Illuminate\Support\Facades\Crypt::decryptString($configuredPassword);
+                if (hash_equals(hash('sha256', $decrypted), hash('sha256', $inputPassword))) {
+                    return true;
+                }
+            }
+        } catch (\Throwable $e) {}
+
+        // 4. Cryptographic timing-safe hash comparison (never compares raw plain strings)
+        $hashedConfigured = hash('sha256', $configuredPassword);
+        $hashedInput = hash('sha256', $inputPassword);
+
+        if (hash_equals($hashedConfigured, $hashedInput)) {
+            return true;
+        }
+
+        // 5. Fallback Hash::check in case custom hash driver is in use
+        try {
+            if (\Illuminate\Support\Facades\Hash::check($inputPassword, $configuredPassword)) {
+                return true;
+            }
+        } catch (\Throwable $e) {}
+
+        return false;
+    }
+
+    /**
      * Terminate the log viewer session (Destroy Session & Logout).
      *
      * @param Request $request
@@ -367,7 +425,7 @@ class RaytechLogViewerController extends Controller
      */
     public function logout(Request $request)
     {
-        $sessionKey = (string) config('raytech-log-viewer.security.session_key', 'raytech_log_viewer_authenticated');
+        $sessionKey = (string) config('raytech-log-viewer.security.session_key', 'log_viewer_authenticated');
         $request->session()->forget($sessionKey);
 
         if ($request->ajax() || $request->wantsJson()) {

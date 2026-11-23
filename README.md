@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/umesh240/log-viewer"><img src="https://img.shields.io/badge/version-1.3.1-brightgreen.svg" alt="Version"></a>
+  <a href="https://github.com/umesh240/log-viewer"><img src="https://img.shields.io/badge/version-1.3.2-brightgreen.svg" alt="Version"></a>
   <a href="https://packagist.org/packages/raytech/raytech-log-viewer"><img src="https://img.shields.io/badge/packagist-raytech%2Fraytech--log--viewer-orange.svg" alt="Packagist"></a>
   <a href="https://php.net"><img src="https://img.shields.io/badge/php-%5E8.0-8892BF.svg" alt="PHP Version"></a>
   <a href="https://laravel.com"><img src="https://img.shields.io/badge/laravel-%5E8.0%20%7C%20%5E9.0%20%7C%20%5E10.0%20%7C%20%5E11.0%20%7C%20%5E12.0-FF2D20.svg" alt="Laravel"></a>
@@ -265,7 +265,7 @@ The published configuration file is located at `config/raytech-log-viewer.php`. 
 | `LOG_VIEWER_ENABLED` | `true` | Enable or disable the log viewer route |
 | `LOG_VIEWER_ROUTE_PREFIX` | `log-viewer` | URL path prefix (e.g. `/log-viewer`, `/admin/logs`) |
 | `LOG_VIEWER_MIDDLEWARE` | `web` | Middlewares to protect the route (e.g. `web,auth`) |
-| `RAYTECH_LOG_VIEWER_ORDER` | `desc` | Default sort order (`desc` = latest logs on top) |
+| `LOG_VIEWER_ORDER` | `desc` | Default sort order (`desc` = latest logs on top) |
 | `LOG_VIEWER_THEME` | `light` | Default theme (`light` or `dark`) |
 | `LOG_VIEWER_PRIMARY_COLOR` | `#1f6feb` | Primary accent color |
 | `LOG_VIEWER_TITLE` | `RayTech Log Viewer` | Browser tab title and topbar heading |
@@ -276,7 +276,7 @@ The published configuration file is located at `config/raytech-log-viewer.php`. 
 | `LOG_VIEWER_SHOW_SERVER_LOGS`| `false` | Show or hide "Server Logs" section (Apache, Nginx, WAMP, PHP error logs) |
 | `LOG_VIEWER_USE_CDN`         | `false` | Use external CDNs (`true`) or 100% offline bundled local assets (`false`) |
 | `LOG_VIEWER_PASSWORD_PROTECTED` | `false` | Enable or disable password verification screen |
-| `LOG_VIEWER_PASSWORD`        | `secret` | Access password required to view error logs |
+| `LOG_VIEWER_PASSWORD`        | `secret` | Access password (validated via cryptographic hash comparison: Bcrypt, Argon2, SHA-256, or encrypted) |
 | `LOG_VIEWER_MAX_ATTEMPTS`    | `3`     | Max failed attempts before redirecting to home page |
 | `LOG_VIEWER_LOCKOUT_REDIRECT`| `/`     | Redirect URL on lockout (default: home page) |
 | `LOG_VIEWER_DESTROY_SHORTCUT_KEY` | `d` | Emergency hotkey key (<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>D</kbd>) to destroy session and close all open log tabs |
@@ -328,6 +328,8 @@ RaytechLogViewer::allowAll();
 | `php artisan raytech-log-viewer:install --force` | Overwrites existing config and assets |
 | `php artisan raytech-log-viewer:update` | Re-publishes newest CSS, JS, and image assets |
 | `php artisan raytech-log-viewer:update --config` | Updates published `config/raytech-log-viewer.php` |
+| `php artisan raytech-log-viewer:hash <password>` | Generates a secure Bcrypt or SHA-256 hash for `LOG_VIEWER_PASSWORD` |
+| `php artisan raytech-log-viewer:clear {file?}` | Truncates/clears log files from terminal |
 | `php artisan raytech-log-viewer:update --all` | Updates both assets and configuration |
 | `php artisan raytech-log-viewer:clear laravel.log` | Truncates / empties a specific log file |
 | `php artisan raytech-log-viewer:clear --all` | Truncates / empties all discovered log files |

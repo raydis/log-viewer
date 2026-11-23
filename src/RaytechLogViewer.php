@@ -10,7 +10,7 @@ class RaytechLogViewer
     /**
      * Current package version.
      */
-    public const VERSION = '1.3.1';
+    public const VERSION = '1.3.2';
 
     /**
      * Optional custom access restriction callback(s) or middleware(s).
@@ -152,6 +152,23 @@ class RaytechLogViewer
     }
 
     /**
+     * Generate a cryptographic hash or encrypted string for password protection.
+     *
+     * @param string $plainText
+     * @param string $algo 'bcrypt' (default), 'sha256', 'sha512', or 'encrypt'
+     * @return string
+     */
+    public static function hashPassword(string $plainText, string $algo = 'bcrypt'): string
+    {
+        return match (strtolower($algo)) {
+            'sha256' => hash('sha256', $plainText),
+            'sha512' => hash('sha512', $plainText),
+            'encrypt' => \Illuminate\Support\Facades\Crypt::encryptString($plainText),
+            default => \Illuminate\Support\Facades\Hash::make($plainText),
+        };
+    }
+
+    /**
      * Render the lightweight global hotkey / shortcut JavaScript snippet.
      *
      * @return string
@@ -202,8 +219,9 @@ class RaytechLogViewer
                 e.preventDefault();
                 try {
                     if (window.BroadcastChannel) {
-                        new BroadcastChannel('raytech_log_viewer_sync').postMessage({ action: 'destroy_and_close' });
+                        new BroadcastChannel('log_viewer_sync').postMessage({ action: 'destroy_and_close' });
                     }
+                    localStorage.setItem('log_viewer_session_destroyed', Date.now().toString());
                     localStorage.setItem('raytech_log_viewer_session_destroyed', Date.now().toString());
                     fetch('{$logoutUrl}', {
                         method: 'POST',

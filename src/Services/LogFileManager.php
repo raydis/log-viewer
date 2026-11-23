@@ -65,7 +65,9 @@ class LogFileManager
         }
 
         // 2. Environment variables fallback
-        $envPaths = env('RAYTECH_LOG_VIEWER_DIRS')
+        $envPaths = env('LOG_VIEWER_DIRS')
+            ?: env('LOG_VIEWER_FILES')
+            ?: env('RAYTECH_LOG_VIEWER_DIRS')
             ?: env('RAYTECH_LOG_VIEWER_FILES')
             ?: env('SERVER_LOGS_PATH')
             ?: env('SERVER_LOG_FILES');

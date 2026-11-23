@@ -36,7 +36,7 @@
     }
 
     // Theme Management
-    const savedTheme = localStorage.getItem('raytech_log_theme') || defaultTheme;
+    const savedTheme = localStorage.getItem('log_theme') || localStorage.getItem('raytech_log_theme') || defaultTheme;
     document.documentElement.setAttribute('data-theme', savedTheme);
     updateThemeIcon(savedTheme);
 
@@ -46,6 +46,7 @@
             const current = document.documentElement.getAttribute('data-theme');
             const next = current === 'dark' ? 'light' : 'dark';
             document.documentElement.setAttribute('data-theme', next);
+            localStorage.setItem('log_theme', next);
             localStorage.setItem('raytech_log_theme', next);
             updateThemeIcon(next);
         });
@@ -855,7 +856,7 @@
     // =========================================================================
     // Emergency Session Destroy & Close All Log Viewer Tabs (Ctrl + Shift + D)
     // =========================================================================
-    const syncChannel = window.BroadcastChannel ? new BroadcastChannel('raytech_log_viewer_sync') : null;
+    const syncChannel = window.BroadcastChannel ? new BroadcastChannel('log_viewer_sync') : null;
 
     function handleEmergencyClose() {
         try {
@@ -874,7 +875,7 @@
     }
 
     window.addEventListener('storage', function(e) {
-        if (e.key === 'raytech_log_viewer_session_destroyed') {
+        if (e.key === 'log_viewer_session_destroyed' || e.key === 'raytech_log_viewer_session_destroyed') {
             handleEmergencyClose();
         }
     });
@@ -889,6 +890,7 @@
             } catch (e) {}
         }
         try {
+            localStorage.setItem('log_viewer_session_destroyed', Date.now().toString());
             localStorage.setItem('raytech_log_viewer_session_destroyed', Date.now().toString());
         } catch (e) {}
 

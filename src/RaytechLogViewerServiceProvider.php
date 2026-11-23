@@ -6,6 +6,7 @@ use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Routing\Router;
 use Raytech\LogViewer\Console\ClearCommand;
+use Raytech\LogViewer\Console\HashCommand;
 use Raytech\LogViewer\Console\InstallCommand;
 use Raytech\LogViewer\Console\UpdateCommand;
 use Raytech\LogViewer\Console\UninstallCommand;
@@ -84,6 +85,7 @@ class RaytechLogViewerServiceProvider extends ServiceProvider
                 UpdateCommand::class,
                 UninstallCommand::class,
                 ClearCommand::class,
+                HashCommand::class,
             ]);
         }
 

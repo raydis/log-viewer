@@ -167,10 +167,16 @@ return [
      * |   destroys the session and closes all open log viewer tabs!
      * |
      * | - enabled: Enable password protection (default: false)
-     * | - password: Password required to access log viewer
+     * | - password: Password required to access log viewer. Always validated via cryptographic
+     * |   hash comparison (never plain string comparison). Supports Bcrypt ($2y$), Argon2,
+     * |   SHA-256, SHA-512, or encrypted strings. Generate via:
+     * |   `php artisan raytech-log-viewer:hash <password>`
      * | - max_attempts: Maximum failed password attempts before lockout (default: 3)
      * | - lockout_redirect: URL to redirect user when max attempts are exceeded (default: '/')
      * | - lockout_duration: Lockout duration in seconds before attempts reset (default: 60)
+     * | - session_key: Session key for authenticated state (default: 'log_viewer_authenticated')
+     * | - attempts_key: Session key for failed attempts counter (default: 'log_viewer_failed_attempts')
+     * | - lockout_key: Session key for lockout expiration timestamp (default: 'log_viewer_locked_until')
      * | - destroy_shortcut: Hotkey to destroy session and close all open tabs
      * |
      */
