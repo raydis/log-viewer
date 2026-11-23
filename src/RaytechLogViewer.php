@@ -10,7 +10,7 @@ class RaytechLogViewer
     /**
      * Current package version.
      */
-    public const VERSION = '1.2.6';
+    public const VERSION = '1.2.7';
 
     /**
      * Optional custom access restriction callback(s) or middleware(s).
@@ -149,5 +149,49 @@ class RaytechLogViewer
     public static function allFiles(): array
     {
         return (new LogFileManager())->getAllLogFiles();
+    }
+
+    /**
+     * Render the lightweight global hotkey / shortcut JavaScript snippet.
+     *
+     * @return string
+     */
+    public static function renderShortcutScript(): string
+    {
+        $enabled = (bool) config('raytech-log-viewer.shortcut.enabled', false);
+        if (!$enabled) {
+            return '';
+        }
+
+        $routePrefix = trim((string) config('raytech-log-viewer.route.prefix', 'log-viewer'), '/');
+        $url = url($routePrefix);
+        $key = strtolower((string) config('raytech-log-viewer.shortcut.key', 'x'));
+        $ctrlRequired = config('raytech-log-viewer.shortcut.ctrl', true) ? 'true' : 'false';
+        $shiftRequired = config('raytech-log-viewer.shortcut.shift', true) ? 'true' : 'false';
+        $altRequired = config('raytech-log-viewer.shortcut.alt', false) ? 'true' : 'false';
+        $target = config('raytech-log-viewer.shortcut.new_tab', true) ? '_blank' : '_self';
+
+        return <<<HTML
+<!-- RayTech Log Viewer Global Hotkey (Ctrl+Shift+{$key}) -->
+<script>
+(function() {
+    if (window.__raytechLogViewerShortcutBound) return;
+    window.__raytechLogViewerShortcutBound = true;
+    document.addEventListener('keydown', function(e) {
+        var ctrlMatch = {$ctrlRequired} ? (e.ctrlKey || e.metaKey) : (!e.ctrlKey && !e.metaKey);
+        var shiftMatch = {$shiftRequired} ? e.shiftKey : !e.shiftKey;
+        var altMatch = {$altRequired} ? e.altKey : !e.altKey;
+        var keyMatch = (e.key && e.key.toLowerCase() === '{$key}');
+
+        if (ctrlMatch && shiftMatch && altMatch && keyMatch) {
+            if (!window.location.pathname.includes('/{$routePrefix}')) {
+                e.preventDefault();
+                window.open('{$url}', '{$target}');
+            }
+        }
+    });
+})();
+</script>
+HTML;
     }
 }

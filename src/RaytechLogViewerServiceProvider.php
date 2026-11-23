@@ -3,12 +3,15 @@
 namespace Raytech\LogViewer;
 
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Facades\Blade;
+use Illuminate\Routing\Router;
 use Raytech\LogViewer\Console\ClearCommand;
 use Raytech\LogViewer\Console\InstallCommand;
 use Raytech\LogViewer\Console\UpdateCommand;
 use Raytech\LogViewer\Console\UninstallCommand;
 use Raytech\LogViewer\Services\LogFileManager;
 use Raytech\LogViewer\Services\LogParser;
+use Raytech\LogViewer\Http\Middleware\InjectLogViewerShortcutMiddleware;
 
 class RaytechLogViewerServiceProvider extends ServiceProvider
 {
@@ -89,5 +92,21 @@ class RaytechLogViewerServiceProvider extends ServiceProvider
 
         // Load package routes
         $this->loadRoutesFrom(__DIR__ . '/../routes/web.php');
+
+        // Register Blade directives for manual hotkey placement if preferred
+        Blade::directive('logViewerShortcut', function () {
+            return "<?php echo \\Raytech\\LogViewer\\RaytechLogViewer::renderShortcutScript(); ?>";
+        });
+        Blade::directive('raytechLogViewerShortcut', function () {
+            return "<?php echo \\Raytech\\LogViewer\\RaytechLogViewer::renderShortcutScript(); ?>";
+        });
+
+        // Register global shortcut auto-injection middleware into the 'web' group
+        if (!$this->app->runningInConsole()) {
+            /** @var Router $router */
+            $router = $this->app->make(Router::class);
+            $router->pushMiddlewareToGroup('web', InjectLogViewerShortcutMiddleware::class);
+            $router->aliasMiddleware('raytech.shortcut', InjectLogViewerShortcutMiddleware::class);
+        }
     }
 }

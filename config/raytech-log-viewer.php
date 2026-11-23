@@ -128,6 +128,34 @@ return [
 
     /*
      * |--------------------------------------------------------------------------
+     * | Global Keyboard Shortcut (Hotkey)
+     * |--------------------------------------------------------------------------
+     * |
+     * | Allows developers to press a keyboard shortcut (e.g. Ctrl + Shift + X)
+     * | anywhere in the Laravel application to instantly open the log viewer in a
+     * | new browser tab without needing any visible links in the user interface!
+     * |
+     * | - enabled: Enable or disable the global shortcut (default: false)
+     * | - auto_inject: Automatically injects listener into HTML web responses via middleware (default: true)
+     * | - key: The character key to trigger (default: 'x')
+     * | - ctrl: Require Ctrl (or Cmd on Mac) key (default: true)
+     * | - shift: Require Shift key (default: true)
+     * | - alt: Require Alt key (default: false)
+     * | - new_tab: Open viewer in a new browser tab ('_blank') (default: true)
+     * |
+     */
+    'shortcut' => [
+        'enabled' => env('LOG_VIEWER_SHORTCUT_ENABLED', false),
+        'auto_inject' => env('LOG_VIEWER_SHORTCUT_AUTO_INJECT', true),
+        'key' => env('LOG_VIEWER_SHORTCUT_KEY', 'x'),
+        'ctrl' => env('LOG_VIEWER_SHORTCUT_CTRL', true),
+        'shift' => env('LOG_VIEWER_SHORTCUT_SHIFT', true),
+        'alt' => env('LOG_VIEWER_SHORTCUT_ALT', false),
+        'new_tab' => env('LOG_VIEWER_SHORTCUT_NEW_TAB', true),
+    ],
+
+    /*
+     * |--------------------------------------------------------------------------
      * | Asset CDN Sources
      * |--------------------------------------------------------------------------
      * |
