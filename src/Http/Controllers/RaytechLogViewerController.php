@@ -334,6 +334,7 @@ class RaytechLogViewerController extends Controller
         if ($isMatch) {
             $request->session()->forget($attemptsKey);
             $request->session()->forget($lockoutKey);
+            $request->session()->regenerate();
             $request->session()->put($sessionKey, true);
 
             return redirect()->route($namePrefix . 'index');
