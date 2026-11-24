@@ -29,6 +29,21 @@ class RaytechLogViewerController extends Controller
         $this->fileManager = $fileManager;
         $this->parser = $parser;
 
+        // 1. IP Whitelisting Check (when allowed_ips is null/empty, access is allowed to all)
+        $this->middleware(function ($request, $next) {
+            if (!$this->isIpAllowed($request)) {
+                if ($request->ajax() || $request->query('ajax') == '1' || $request->wantsJson()) {
+                    return response()->json([
+                        'status' => false,
+                        'message' => 'Unauthorized: Your IP (' . ($request->ip() ?? 'unknown') . ') is not in the allowed whitelist.',
+                    ], 403);
+                }
+                abort(403, 'Access denied: Your IP (' . ($request->ip() ?? 'unknown') . ') is not authorized to access the log viewer.');
+            }
+            return $next($request);
+        })->except(['asset']);
+
+        // 2. Custom route middlewares / callbacks
         $rawMiddlewares = $this->middlewareHandler();
         $middlewares = $this->parseMiddlewares($rawMiddlewares);
 
@@ -136,6 +151,124 @@ class RaytechLogViewerController extends Controller
         }
 
         return null;
+    }
+
+    /**
+     * Determine whether the client IP address is permitted by the whitelist.
+     * When LOG_VIEWER_ALLOWED_IPS is null, empty string, or empty array, access is allowed to all.
+     *
+     * @param Request $request
+     * @return bool
+     */
+    protected function isIpAllowed(Request $request): bool
+    {
+        $allowed = config('raytech-log-viewer.security.allowed_ips');
+        if ($allowed === null) {
+            $allowed = env('LOG_VIEWER_ALLOWED_IPS', null);
+        }
+
+        // If null, empty string, or empty array, access is allowed to all
+        if ($allowed === null || $allowed === '' || $allowed === []) {
+            return true;
+        }
+
+        if (is_string($allowed)) {
+            $allowed = array_filter(array_map('trim', explode(',', $allowed)));
+        }
+
+        if (empty($allowed)) {
+            return true;
+        }
+
+        $clientIp = $request->ip();
+        if (!$clientIp) {
+            return false;
+        }
+
+        foreach ($allowed as $rule) {
+            $rule = trim((string) $rule);
+            if ($rule === '') {
+                continue;
+            }
+
+            // Exact match
+            if ($clientIp === $rule) {
+                return true;
+            }
+
+            // Wildcard match (e.g. 192.168.1.*)
+            if (strpos($rule, '*') !== false && fnmatch($rule, $clientIp)) {
+                return true;
+            }
+
+            // CIDR subnet match (e.g. 10.0.0.0/8, 192.168.0.0/16)
+            if (strpos($rule, '/') !== false && $this->ipMatchesCidr($clientIp, $rule)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Check if an IP address falls within a CIDR subnet range.
+     *
+     * @param string $ip
+     * @param string $cidr
+     * @return bool
+     */
+    protected function ipMatchesCidr(string $ip, string $cidr): bool
+    {
+        if (strpos($cidr, '/') === false) {
+            return false;
+        }
+
+        [$subnet, $mask] = explode('/', $cidr, 2);
+
+        // IPv4 CIDR matching
+        if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4) && filter_var($subnet, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) {
+            $ipLong = ip2long($ip);
+            $subnetLong = ip2long($subnet);
+            $maskInt = (int) $mask;
+
+            if ($maskInt < 0 || $maskInt > 32) {
+                return false;
+            }
+
+            if ($maskInt === 0) {
+                return true;
+            }
+
+            $netmask = -1 << (32 - $maskInt);
+            return ($ipLong & $netmask) === ($subnetLong & $netmask);
+        }
+
+        // IPv6 CIDR matching
+        if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6) && filter_var($subnet, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) {
+            $ipBin = inet_pton($ip);
+            $subnetBin = inet_pton($subnet);
+            $maskInt = (int) $mask;
+
+            if ($ipBin === false || $subnetBin === false || $maskInt < 0 || $maskInt > 128) {
+                return false;
+            }
+
+            $bytes = (int) ($maskInt / 8);
+            $bits = $maskInt % 8;
+
+            if ($bytes > 0 && substr($ipBin, 0, $bytes) !== substr($subnetBin, 0, $bytes)) {
+                return false;
+            }
+
+            if ($bits > 0) {
+                $maskByte = chr((0xFF << (8 - $bits)) & 0xFF);
+                return ($ipBin[$bytes] & $maskByte) === ($subnetBin[$bytes] & $maskByte);
+            }
+
+            return true;
+        }
+
+        return false;
     }
 
     /**

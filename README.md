@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/umesh240/log-viewer"><img src="https://img.shields.io/badge/version-1.3.3-brightgreen.svg" alt="Version"></a>
+  <a href="https://github.com/umesh240/log-viewer"><img src="https://img.shields.io/badge/version-1.4.0-brightgreen.svg" alt="Version"></a>
   <a href="https://packagist.org/packages/raytech/raytech-log-viewer"><img src="https://img.shields.io/badge/packagist-raytech%2Fraytech--log--viewer-orange.svg" alt="Packagist"></a>
   <a href="https://php.net"><img src="https://img.shields.io/badge/php-%5E8.0-8892BF.svg" alt="PHP Version"></a>
   <a href="https://laravel.com"><img src="https://img.shields.io/badge/laravel-%5E8.0%20%7C%20%5E9.0%20%7C%20%5E10.0%20%7C%20%5E11.0%20%7C%20%5E12.0-FF2D20.svg" alt="Laravel"></a>
@@ -84,6 +84,19 @@
 - 🛡️ **Flexible Security & Access Control**:
   - Works with any middleware (`web`, `auth`, custom role guards).
   - Supports programmatic closures (`RaytechLogViewer::auth(...)`) in your `AppServiceProvider`.
+- 🛡️ **IP Address Whitelisting (`LOG_VIEWER_ALLOWED_IPS`)**:
+  - Restrict access to authorized IP addresses, subnets, or office networks.
+  - Open by default: When `LOG_VIEWER_ALLOWED_IPS` is `null` or empty, access is allowed to all.
+  - Supports exact IPs (`127.0.0.1`, `::1`), wildcards (`192.168.1.*`), and CIDR subnet masks (`10.0.0.0/8`, `192.168.0.0/16`).
+- 📅 **Date-Picker / Calendar Jump for Daily Logs**:
+  - Jump directly to any daily log file (e.g. `laravel-2026-11-24.log`) with a single click using the compact calendar picker in the sidebar.
+  - Auto-selects the date of the active daily log and filters the sidebar in real time.
+- 🏷️ **Multi-Level Log Filtering**:
+  - Select multiple severity levels simultaneously (e.g. view `ERROR` + `WARN` together while hiding `INFO`/`DEBUG`).
+  - Toggle levels on/off with single clicks; click "All" to instantly reset.
+- 📤 **Export Filtered Logs as JSON & CSV**:
+  - Export currently filtered/visible log records into clean `.json` or `.csv` files directly from the toolbar.
+  - Includes timestamp, log level, exception details, and body content with RFC 4180 escaping and UTF-8 BOM encoding for Excel.
 - 📋 **Productivity Actions**:
   - Download raw log file.
   - View raw unformatted log in a new tab.
@@ -275,6 +288,7 @@ The published configuration file is located at `config/raytech-log-viewer.php`. 
 | `LOG_VIEWER_SHOW_BACK_BUTTON`| `true` | Show or hide the back button |
 | `LOG_VIEWER_SHOW_SERVER_LOGS`| `false` | Show or hide "Server Logs" section (Apache, Nginx, WAMP, PHP error logs) |
 | `LOG_VIEWER_USE_CDN`         | `false` | Use external CDNs (`true`) or 100% offline bundled local assets (`false`) |
+| `LOG_VIEWER_ALLOWED_IPS`     | `null`  | Allowed IP whitelist (null = allow all). Supports exact IPs, wildcards (`192.168.1.*`), and CIDR (`10.0.0.0/8`) |
 | `LOG_VIEWER_PASSWORD_PROTECTED` | `false` | Enable or disable password verification screen |
 | `LOG_VIEWER_PASSWORD`        | `test26 hash` | Hashed password (default: hash of `test26`). Validated strictly via `Hash::check()`. Generate via `php artisan raytech-log-viewer:hash <password>` |
 | `LOG_VIEWER_MAX_ATTEMPTS`    | `3`     | Max failed attempts before redirecting to home page |

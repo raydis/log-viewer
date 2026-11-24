@@ -7,7 +7,7 @@
     // State variables
     let activeKey = config.activeKey || '';
     let activeName = config.activeName || '';
-    let activeLevelFilter = 'all';
+    let activeLevels = new Set(['all']);
     let activeOrder = config.order || 'desc';
     let autoRefreshInterval = null;
 
@@ -245,26 +245,129 @@
     const filterFilesInput = document.getElementById('filterFilesInput');
     if (filterFilesInput) {
         filterFilesInput.addEventListener('input', function() {
-            const term = this.value.toLowerCase().trim();
+            applySidebarFilter();
+        });
+    }
+
+    // Sidebar Date-Picker Jump for Daily Logs
+    const datePickerJump = document.getElementById('datePickerJump');
+    const btnClearDateJump = document.getElementById('btnClearDateJump');
+
+    if (datePickerJump) {
+        // If active log file contains a date (YYYY-MM-DD), pre-fill date picker
+        const activeDateMatch = (activeName || '').match(/\d{4}-\d{2}-\d{2}/);
+        if (activeDateMatch) {
+            datePickerJump.value = activeDateMatch[0];
+            if (btnClearDateJump) btnClearDateJump.style.display = 'flex';
+        }
+
+        datePickerJump.addEventListener('change', function() {
+            const selectedDate = this.value; // 'YYYY-MM-DD'
+            if (!selectedDate) {
+                if (btnClearDateJump) btnClearDateJump.style.display = 'none';
+                applySidebarFilter();
+                return;
+            }
+
+            if (btnClearDateJump) btnClearDateJump.style.display = 'flex';
+
             const items = document.querySelectorAll('.sidebar .file-item');
+            let matchedItem = null;
+            let matchCount = 0;
+
             items.forEach(item => {
-                const name = item.getAttribute('data-name');
-                if (!term || (name && name.includes(term))) {
+                const name = item.getAttribute('data-name') || '';
+                if (name.includes(selectedDate)) {
                     item.style.display = 'flex';
+                    matchCount++;
+                    if (!matchedItem) {
+                        matchedItem = item;
+                    }
                 } else {
                     item.style.display = 'none';
                 }
             });
+
+            if (matchedItem) {
+                const matchedKey = matchedItem.getAttribute('data-key');
+                if (matchedKey && matchedKey !== activeKey) {
+                    matchedItem.click();
+                } else {
+                    showToast(`Active log matches date: ${selectedDate}`, 'success');
+                }
+            } else {
+                showToast(`No log file found for date ${selectedDate}`, 'error');
+            }
         });
     }
 
-    // Level Filtering
+    if (btnClearDateJump) {
+        btnClearDateJump.addEventListener('click', function() {
+            if (datePickerJump) {
+                datePickerJump.value = '';
+            }
+            this.style.display = 'none';
+            applySidebarFilter();
+        });
+    }
+
+    function applySidebarFilter() {
+        const textTerm = filterFilesInput ? filterFilesInput.value.toLowerCase().trim() : '';
+        const dateTerm = datePickerJump ? datePickerJump.value.trim() : '';
+        const items = document.querySelectorAll('.sidebar .file-item');
+
+        items.forEach(item => {
+            const name = item.getAttribute('data-name') || '';
+            const textMatch = !textTerm || name.includes(textTerm);
+            const dateMatch = !dateTerm || name.includes(dateTerm);
+
+            if (textMatch && dateMatch) {
+                item.style.display = 'flex';
+            } else {
+                item.style.display = 'none';
+            }
+        });
+    }
+
+    // Multi-Level Filtering
     const pillBadges = document.querySelectorAll('.pill-badge[data-filter]');
     pillBadges.forEach(badge => {
         badge.addEventListener('click', function() {
-            pillBadges.forEach(b => b.classList.remove('active'));
-            this.classList.add('active');
-            activeLevelFilter = this.getAttribute('data-filter');
+            const filter = this.getAttribute('data-filter');
+
+            if (filter === 'all') {
+                // Clicking 'all' resets everything to only 'all'
+                activeLevels.clear();
+                activeLevels.add('all');
+            } else {
+                // If 'all' was active, deactivate it
+                if (activeLevels.has('all')) {
+                    activeLevels.delete('all');
+                }
+
+                // Toggle the clicked level
+                if (activeLevels.has(filter)) {
+                    activeLevels.delete(filter);
+                } else {
+                    activeLevels.add(filter);
+                }
+
+                // If all levels were deselected, fallback to 'all'
+                if (activeLevels.size === 0) {
+                    activeLevels.add('all');
+                }
+            }
+
+            // Update UI active styles on pills
+            pillBadges.forEach(b => {
+                const bFilter = b.getAttribute('data-filter');
+                if (activeLevels.has(bFilter)) {
+                    b.classList.add('active');
+                } else {
+                    b.classList.remove('active');
+                }
+            });
+
             applyFilters();
         });
     });
@@ -319,18 +422,26 @@
 
             const fullText = codeEl ? codeEl.textContent : shortText;
 
-            // Level match
+            // Multi-level match
             let levelMatch = false;
-            if (activeLevelFilter === 'all') {
+            if (activeLevels.has('all')) {
                 levelMatch = true;
-            } else if (activeLevelFilter === 'error' && (level === 'error' || level === 'critical')) {
-                levelMatch = true;
-            } else if (activeLevelFilter === 'warning' && (level === 'warning' || level === 'notice')) {
-                levelMatch = true;
-            } else if (activeLevelFilter === 'info' && level === 'info') {
-                levelMatch = true;
-            } else if (level === activeLevelFilter) {
-                levelMatch = true;
+            } else {
+                if (activeLevels.has('error') && (level === 'error' || level === 'critical' || level === 'alert' || level === 'emergency')) {
+                    levelMatch = true;
+                }
+                if (activeLevels.has('warning') && (level === 'warning' || level === 'notice')) {
+                    levelMatch = true;
+                }
+                if (activeLevels.has('info') && level === 'info') {
+                    levelMatch = true;
+                }
+                if (activeLevels.has('debug') && level === 'debug') {
+                    levelMatch = true;
+                }
+                if (activeLevels.has(level)) {
+                    levelMatch = true;
+                }
             }
 
             // Search match across short text or full content
@@ -716,6 +827,156 @@
                 showToast('Clipboard access denied', 'error');
             });
         });
+    }
+
+    // =========================================================================
+    // Export Filtered Logs (JSON & CSV)
+    // =========================================================================
+    const btnExportToggle = document.getElementById('btnExportToggle');
+    const exportDropdownMenu = document.getElementById('exportDropdownMenu');
+    const exportDropdownWrap = document.getElementById('exportDropdownWrap');
+
+    if (btnExportToggle && exportDropdownMenu) {
+        btnExportToggle.addEventListener('click', function(e) {
+            e.stopPropagation();
+            const isShown = exportDropdownMenu.style.display === 'block';
+            exportDropdownMenu.style.display = isShown ? 'none' : 'block';
+        });
+
+        document.addEventListener('click', function(e) {
+            if (exportDropdownWrap && !exportDropdownWrap.contains(e.target)) {
+                exportDropdownMenu.style.display = 'none';
+            }
+        });
+    }
+
+    const btnExportJson = document.getElementById('btnExportJson');
+    if (btnExportJson) {
+        btnExportJson.addEventListener('click', function(e) {
+            e.preventDefault();
+            if (exportDropdownMenu) exportDropdownMenu.style.display = 'none';
+            exportFilteredLogs('json');
+        });
+    }
+
+    const btnExportCsv = document.getElementById('btnExportCsv');
+    if (btnExportCsv) {
+        btnExportCsv.addEventListener('click', function(e) {
+            e.preventDefault();
+            if (exportDropdownMenu) exportDropdownMenu.style.display = 'none';
+            exportFilteredLogs('csv');
+        });
+    }
+
+    function exportFilteredLogs(format) {
+        const visibleEntries = Array.from(document.querySelectorAll('.log-entry, .log-line'))
+            .filter(el => el.style.display !== 'none');
+
+        if (visibleEntries.length === 0) {
+            showToast('No filtered logs to export', 'error');
+            return;
+        }
+
+        const dateStr = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+        const baseName = (activeName || 'laravel.log').replace(/\.[^/.]+$/, '');
+        const filename = `${baseName}_filtered_${dateStr}.${format}`;
+
+        if (format === 'json') {
+            const exportData = visibleEntries.map((el, index) => {
+                const level = el.getAttribute('data-level') || 'info';
+                const typeEl = el.querySelector('.col-type .log-type-tag');
+                const dateEl = el.querySelector('.col-date .log-date-text');
+                const shortTextEl = el.querySelector('.entry-short-text') || el.querySelector('.line-text');
+                const codeEl = el.querySelector('.full-log-code code');
+                const excTitleEl = el.querySelector('.exception-type-title');
+                const excMsgEl = el.querySelector('.exception-message-text');
+                const excFileLineEl = el.querySelector('.exception-file-line');
+                const contextEl = el.querySelector('.context-json-code code');
+
+                let exception = null;
+                if (excTitleEl || excMsgEl) {
+                    exception = {
+                        class: excTitleEl ? excTitleEl.textContent.trim() : '',
+                        message: excMsgEl ? excMsgEl.textContent.trim() : '',
+                        file_line: excFileLineEl ? excFileLineEl.textContent.trim() : ''
+                    };
+                }
+
+                let context = null;
+                if (contextEl && contextEl.textContent.trim()) {
+                    try {
+                        context = JSON.parse(contextEl.textContent.trim());
+                    } catch (e) {
+                        context = contextEl.textContent.trim();
+                    }
+                }
+
+                return {
+                    number: index + 1,
+                    level: level,
+                    type: typeEl ? typeEl.textContent.trim() : level.toUpperCase(),
+                    timestamp: dateEl ? dateEl.textContent.trim() : '',
+                    message: shortTextEl ? (shortTextEl.getAttribute('data-original') || shortTextEl.textContent.trim()) : '',
+                    exception: exception,
+                    context: context,
+                    full_log: codeEl ? codeEl.textContent : (shortTextEl ? shortTextEl.textContent : '')
+                };
+            });
+
+            const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json;charset=utf-8;' });
+            downloadBlob(blob, filename);
+            showToast(`Exported ${exportData.length} records as JSON`, 'success');
+        } else if (format === 'csv') {
+            const headers = ['#', 'Level', 'Type', 'Timestamp', 'Message', 'Exception Class', 'Exception Message', 'File / Line', 'Full Log'];
+            const rows = [headers.map(escapeCsv).join(',')];
+
+            visibleEntries.forEach((el, index) => {
+                const level = el.getAttribute('data-level') || 'info';
+                const typeEl = el.querySelector('.col-type .log-type-tag');
+                const dateEl = el.querySelector('.col-date .log-date-text');
+                const shortTextEl = el.querySelector('.entry-short-text') || el.querySelector('.line-text');
+                const codeEl = el.querySelector('.full-log-code code');
+                const excTitleEl = el.querySelector('.exception-type-title');
+                const excMsgEl = el.querySelector('.exception-message-text');
+                const excFileLineEl = el.querySelector('.exception-file-line');
+
+                const row = [
+                    index + 1,
+                    level.toUpperCase(),
+                    typeEl ? typeEl.textContent.trim() : level.toUpperCase(),
+                    dateEl ? dateEl.textContent.trim() : '',
+                    shortTextEl ? (shortTextEl.getAttribute('data-original') || shortTextEl.textContent.trim()) : '',
+                    excTitleEl ? excTitleEl.textContent.trim() : '',
+                    excMsgEl ? excMsgEl.textContent.trim() : '',
+                    excFileLineEl ? excFileLineEl.textContent.trim() : '',
+                    codeEl ? codeEl.textContent : (shortTextEl ? shortTextEl.textContent : '')
+                ];
+
+                rows.push(row.map(escapeCsv).join(','));
+            });
+
+            // Include UTF-8 BOM so Excel opens with proper encoding
+            const blob = new Blob(['\uFEFF' + rows.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
+            downloadBlob(blob, filename);
+            showToast(`Exported ${visibleEntries.length} records as CSV`, 'success');
+        }
+    }
+
+    function escapeCsv(val) {
+        if (val === null || val === undefined) return '""';
+        const str = String(val).replace(/"/g, '""');
+        return `"${str}"`;
+    }
+
+    function downloadBlob(blob, filename) {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
     }
 
     // CLEAR LOG ACTION

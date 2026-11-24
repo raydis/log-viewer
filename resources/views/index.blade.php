@@ -135,17 +135,17 @@
             </div>
             <span id="searchCountBadge" class="pill-badge" style="display:none; font-size:10px;"></span>
 
-            <!-- Level Filters -->
-            <span class="pill-badge active" data-filter="all" id="pillAll">
+            <!-- Level Filters (Supports Multi-Select) -->
+            <span class="pill-badge active" data-filter="all" id="pillAll" title="Show all log levels">
                 All <span id="statAll">({{ $stats['total'] }})</span>
             </span>
-            <span class="pill-badge pill-error" data-filter="error" id="pillError">
+            <span class="pill-badge pill-error" data-filter="error" id="pillError" title="Filter Error logs (click to toggle multi-level)">
                 <i class="fa fa-times-circle"></i> Error <span id="statError">({{ $stats['error'] }})</span>
             </span>
-            <span class="pill-badge pill-warn" data-filter="warning" id="pillWarn">
+            <span class="pill-badge pill-warn" data-filter="warning" id="pillWarn" title="Filter Warning logs (click to toggle multi-level)">
                 <i class="fa fa-exclamation-triangle"></i> Warn <span id="statWarn">({{ $stats['warning'] }})</span>
             </span>
-            <span class="pill-badge pill-info" data-filter="info" id="pillInfo">
+            <span class="pill-badge pill-info" data-filter="info" id="pillInfo" title="Filter Info logs (click to toggle multi-level)">
                 <i class="fa fa-info-circle"></i> Info <span id="statInfo">({{ $stats['info'] }})</span>
             </span>
         </div>
@@ -185,6 +185,23 @@
                 </button>
             @endif
 
+            <!-- Export Filtered Logs Dropdown -->
+            @if($selectedFile)
+                <div class="dropdown-wrap" id="exportDropdownWrap" style="position: relative; display: inline-block;">
+                    <button type="button" class="btn-compact" id="btnExportToggle" title="Export currently filtered logs">
+                        <i class="fa fa-file-export"></i> Export <i class="fa fa-caret-down" style="font-size: 9px; margin-left: 2px;"></i>
+                    </button>
+                    <div class="dropdown-menu-compact" id="exportDropdownMenu" style="display: none;">
+                        <a href="javascript:void(0)" class="dropdown-item-compact" id="btnExportJson">
+                            <i class="far fa-file-code text-warning"></i> Export as JSON
+                        </a>
+                        <a href="javascript:void(0)" class="dropdown-item-compact" id="btnExportCsv">
+                            <i class="far fa-file-excel text-success"></i> Export as CSV
+                        </a>
+                    </div>
+                </div>
+            @endif
+
             <!-- Download Button -->
             @if(!empty($features['allow_download']) && $selectedFile)
                 <a href="{{ route($downloadRoute, ['key' => $selectedFile['key']]) }}" class="btn-compact" id="btnDownloadLog" title="Download raw file">
@@ -221,6 +238,17 @@
         <aside class="sidebar" id="sidebarFiles">
             <div class="sidebar-search">
                 <input type="text" id="filterFilesInput" placeholder="Filter files (e.g. php, laravel)..." autocomplete="off">
+            </div>
+
+            <!-- Date-Picker Jump for Daily Logs -->
+            <div class="sidebar-date-jump" title="Select a date to jump to matching daily log">
+                <div class="date-input-wrap">
+                    <i class="far fa-calendar-alt date-jump-icon"></i>
+                    <input type="date" id="datePickerJump" class="date-picker-compact" title="Pick date to jump to daily log (YYYY-MM-DD)">
+                    <button type="button" id="btnClearDateJump" class="btn-clear-date" title="Clear date selection" style="display:none;">
+                        <i class="fa fa-times"></i>
+                    </button>
+                </div>
             </div>
 
             <div class="sidebar-scroll">

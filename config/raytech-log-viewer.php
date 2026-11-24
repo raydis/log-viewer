@@ -171,6 +171,10 @@ return [
      * |   Always stored as a hashed/encrypted string and validated strictly using
      * |   the `Hash::check()` method. By default, contains the pre-computed hash for 'test26'.
      * |   Generate your own custom hash via: `php artisan raytech-log-viewer:hash <password>`
+     * | - allowed_ips: IP address whitelist. When null, empty string, or empty array,
+     * |   access is allowed to all. Supports exact IPs ('127.0.0.1', '::1'), wildcards
+     * |   ('192.168.1.*'), and CIDR subnets ('10.0.0.0/8', '192.168.0.0/16').
+     * |   Comma-separated string in .env supported: LOG_VIEWER_ALLOWED_IPS="127.0.0.1, 192.168.1.*"
      * | - max_attempts: Maximum failed password attempts before lockout (default: 3)
      * | - lockout_redirect: URL to redirect user when max attempts are exceeded (default: '/')
      * | - lockout_duration: Lockout duration in seconds before attempts reset (default: 60)
@@ -183,6 +187,9 @@ return [
     'security' => [
         'enabled' => env('LOG_VIEWER_PASSWORD_PROTECTED', false),
         'password' => env('LOG_VIEWER_PASSWORD', '$2y$10$ZfUboNTMgBUhU5kVfoWyTu8X4B4WMr7trhWrjZGnpm4u9PLiDfv2W'), // Default hash of 'test26'
+        // IP Whitelist: null, empty string, or [] allows access to all.
+        // Set specific IPs, wildcards ('192.168.1.*'), or CIDR ('10.0.0.0/8') to restrict.
+        'allowed_ips' => env('LOG_VIEWER_ALLOWED_IPS', null),
         'max_attempts' => (int) env('LOG_VIEWER_MAX_ATTEMPTS', 3),
         'lockout_redirect' => env('LOG_VIEWER_LOCKOUT_REDIRECT', '/'),
         'lockout_duration' => (int) env('LOG_VIEWER_LOCKOUT_DURATION', 60),
