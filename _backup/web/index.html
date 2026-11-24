@@ -1,0 +1,1147 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RayTech Log Viewer — The High-Velocity, Enterprise Log Viewer for Laravel</title>
+    <meta name="description" content="A modern, high-performance Laravel log viewer plugin with clean single-line headers, click-to-expand stack traces, newest-first sorting, live auto-refresh, instant search, and zero database setup.">
+    <meta name="keywords" content="laravel, log viewer, laravel logs, tail, real-time logs, debugging, php error log, monolog, stack trace">
+    <meta name="author" content="RayTech">
+
+    <!-- Open Graph / Social Media -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="RayTech Log Viewer — Enterprise Log Viewer for Laravel">
+    <meta property="og:description" content="View application and server logs with clean header rows, click-to-expand stack traces, newest-first sorting, 64KB reverse tail reading, and zero database setup.">
+    <meta property="og:image" content="../../public/img/default_logo.png">
+
+    <!-- Google Fonts: Inter & JetBrains Mono -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
+
+    <!-- Tailwind CSS (CDN) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#eff6ff',
+                            100: '#dbeafe',
+                            400: '#60a5fa',
+                            500: '#3b82f6',
+                            600: '#1f6feb',
+                            700: '#1d4ed8',
+                            900: '#1e3a8a',
+                        },
+                        dark: {
+                            950: '#090d16',
+                            900: '#0f172a',
+                            850: '#131e36',
+                            800: '#1e293b',
+                            700: '#334155',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- FontAwesome Free Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        /* Custom scrollbars */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+        /* Glowing accents & gradients */
+        .glow-accent {
+            background: radial-gradient(circle at 50% 0%, rgba(31, 111, 235, 0.25) 0%, rgba(15, 23, 42, 0) 70%);
+        }
+        .glow-card {
+            box-shadow: 0 0 40px -10px rgba(31, 111, 235, 0.15);
+        }
+        .code-gradient {
+            background: linear-gradient(135deg, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.9) 100%);
+        }
+
+        /* Badge animations */
+        @keyframes pulse-soft {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.75; transform: scale(0.97); }
+        }
+        .animate-pulse-soft {
+            animation: pulse-soft 2.5s infinite ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-dark-950 text-slate-200 font-sans antialiased selection:bg-brand-600 selection:text-white">
+
+    <!-- Glowing Background Atmosphere -->
+    <div class="fixed inset-0 pointer-events-none glow-accent z-0"></div>
+
+    <!-- ========================================================================= -->
+    <!-- 1. NAVIGATION BAR -->
+    <!-- ========================================================================= -->
+    <header class="sticky top-0 z-50 backdrop-blur-xl bg-dark-950/80 border-b border-slate-800/80">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+            <!-- Brand Logo -->
+            <a href="#" class="flex items-center gap-3.5 group">
+                <div class="w-11 h-11 rounded-xl bg-gradient-to-tr from-brand-600 to-indigo-500 p-0.5 shadow-lg shadow-brand-500/25 group-hover:shadow-brand-500/40 transition">
+                    <img src="../../public/img/default_logo.png" alt="RayTech Logo" class="w-full h-full object-cover rounded-[10px]" onerror="this.src='https://raw.githubusercontent.com/umesh240/log-viewer/main/public/img/default_logo.png'">
+                </div>
+                <div>
+                    <div class="font-extrabold text-lg tracking-tight text-white flex items-center gap-2">
+                        RayTech <span class="text-brand-400 font-normal">Log Viewer</span>
+                        <span class="text-[10px] font-mono uppercase tracking-widest px-2 py-0.5 rounded-full bg-brand-500/15 text-brand-300 border border-brand-500/30">v1.0.0</span>
+                    </div>
+                    <div class="text-xs text-slate-400 font-mono -mt-0.5">Enterprise Laravel Logging</div>
+                </div>
+            </a>
+
+            <!-- Nav Links -->
+            <nav class="hidden md:flex items-center gap-8 text-sm font-medium text-slate-300">
+                <a href="#features" class="hover:text-brand-400 transition">Features</a>
+                <a href="#simulator" class="hover:text-brand-400 transition flex items-center gap-1.5">
+                    Live Simulator <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                </a>
+                <a href="#install" class="hover:text-brand-400 transition">Installation</a>
+                <a href="#security" class="hover:text-brand-400 transition">Security</a>
+                <a href="#env-config" class="hover:text-brand-400 transition">Configuration</a>
+                <a href="#faq" class="hover:text-brand-400 transition">FAQ</a>
+            </nav>
+
+            <!-- Action Buttons -->
+            <div class="flex items-center gap-3">
+                <a href="https://github.com/umesh240/log-viewer" target="_blank" class="hidden sm:inline-flex items-center gap-2 text-xs font-semibold px-3.5 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition">
+                    <i class="fab fa-github text-sm"></i> Star on GitHub
+                </a>
+                <a href="#install" class="inline-flex items-center gap-2 text-xs font-semibold px-4 py-2.5 rounded-lg bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-500 hover:to-indigo-500 text-white shadow-lg shadow-brand-600/30 transition transform hover:-translate-y-0.5">
+                    <i class="fas fa-terminal"></i> Get Started
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- ========================================================================= -->
+    <!-- 2. HERO SECTION -->
+    <!-- ========================================================================= -->
+    <section class="relative pt-20 pb-28 overflow-hidden z-10">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            
+            <!-- Release Pill -->
+            <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-slate-800/90 border border-slate-700 text-xs font-medium text-slate-300 mb-8 backdrop-blur shadow-sm">
+                <span class="flex h-2 w-2 rounded-full bg-brand-400 animate-pulse"></span>
+                <span>Production Ready for <strong>Laravel 8.x — 12.x</strong> &amp; <strong>PHP 8.0 — 8.5</strong></span>
+                <span class="text-slate-500">|</span>
+                <span class="text-brand-400 font-mono">MIT Licensed</span>
+            </div>
+
+            <!-- Main Heading -->
+            <h1 class="text-4xl sm:text-6xl lg:text-7xl font-extrabold text-white tracking-tight leading-[1.1] max-w-5xl mx-auto mb-6">
+                The High-Velocity, Enterprise <br>
+                <span class="bg-gradient-to-r from-brand-400 via-indigo-300 to-cyan-400 bg-clip-text text-transparent">Log Viewer for Laravel</span>
+            </h1>
+
+            <!-- Subtitle -->
+            <p class="text-lg sm:text-xl text-slate-300 max-w-3xl mx-auto mb-10 leading-relaxed font-light">
+                Turn chaotic, multi-gigabyte Laravel and server log files into an organized, high-density control center. Clean single-line headers, click-to-expand stack traces, newest-first sorting, live auto-refresh, and <strong class="text-white font-semibold">zero database setup</strong>.
+            </p>
+
+            <!-- Hero Action Box: Composer Install Copy -->
+            <div class="max-w-2xl mx-auto mb-12">
+                <div class="flex flex-col sm:flex-row items-center gap-3 p-2 rounded-2xl bg-dark-900/90 border border-slate-700/80 shadow-2xl backdrop-blur-md">
+                    <div class="flex items-center gap-3 px-4 py-2 font-mono text-sm text-slate-200 overflow-x-auto w-full sm:w-auto flex-1">
+                        <span class="text-brand-400 select-none">$</span>
+                        <span id="heroComposerCmd" class="whitespace-nowrap font-semibold">composer require raytech/raytech-log-viewer</span>
+                    </div>
+                    <button onclick="copyToClipboard('composer require raytech/raytech-log-viewer', 'btnCopyHero')" id="btnCopyHero" class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-semibold text-xs tracking-wide transition shadow-md shadow-brand-600/30">
+                        <i class="far fa-copy text-sm"></i> <span>Copy Command</span>
+                    </button>
+                </div>
+                <div class="text-xs text-slate-400 mt-2.5 font-mono">
+                    Followed by: <span class="text-slate-300">php artisan raytech-log-viewer:install</span>
+                </div>
+            </div>
+
+            <!-- Key Feature Badges -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 max-w-4xl mx-auto text-left">
+                <div class="p-3.5 rounded-xl bg-dark-900/60 border border-slate-800 backdrop-blur flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-base"><i class="fas fa-database"></i></div>
+                    <div>
+                        <div class="text-xs font-bold text-white">0 Migrations</div>
+                        <div class="text-[11px] text-slate-400 font-light">Zero database footprint</div>
+                    </div>
+                </div>
+                <div class="p-3.5 rounded-xl bg-dark-900/60 border border-slate-800 backdrop-blur flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-lg bg-brand-500/10 text-brand-400 flex items-center justify-center text-base"><i class="fas fa-bolt"></i></div>
+                    <div>
+                        <div class="text-xs font-bold text-white">64KB Reverse Seek</div>
+                        <div class="text-[11px] text-slate-400 font-light">Reads 10GB logs in 3ms</div>
+                    </div>
+                </div>
+                <div class="p-3.5 rounded-xl bg-dark-900/60 border border-slate-800 backdrop-blur flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-lg bg-indigo-500/10 text-indigo-400 flex items-center justify-center text-base"><i class="fas fa-shield-alt"></i></div>
+                    <div>
+                        <div class="text-xs font-bold text-white">Triple Defense</div>
+                        <div class="text-[11px] text-slate-400 font-light">IP CIDR + Bcrypt lockout</div>
+                    </div>
+                </div>
+                <div class="p-3.5 rounded-xl bg-dark-900/60 border border-slate-800 backdrop-blur flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-lg bg-amber-500/10 text-amber-400 flex items-center justify-center text-base"><i class="fas fa-plane"></i></div>
+                    <div>
+                        <div class="text-xs font-bold text-white">100% Offline</div>
+                        <div class="text-[11px] text-slate-400 font-light">Air-gapped safe (No CDN)</div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- ========================================================================= -->
+    <!-- 3. INTERACTIVE LIVE SIMULATOR (SHOW, DON'T JUST TELL) -->
+    <!-- ========================================================================= -->
+    <section id="simulator" class="relative py-16 z-10">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            
+            <div class="text-center max-w-3xl mx-auto mb-10">
+                <span class="text-xs font-mono font-bold tracking-wider text-brand-400 uppercase bg-brand-500/10 px-3 py-1 rounded-full border border-brand-500/20">
+                    Interactive Live Preview
+                </span>
+                <h2 class="text-3xl sm:text-4xl font-extrabold text-white mt-3 tracking-tight">
+                    Experience the Dashboard in Action
+                </h2>
+                <p class="text-slate-400 text-sm mt-2">
+                    Click the error rows below to expand/collapse exception traces. Test real-time search filtering.
+                </p>
+            </div>
+
+            <!-- Mock Window Container -->
+            <div class="rounded-2xl bg-dark-900/95 border border-slate-700/80 shadow-2xl overflow-hidden glow-card">
+                
+                <!-- Window Chrome Titlebar -->
+                <div class="bg-dark-950 px-4 py-3 border-b border-slate-800 flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <span class="w-3 h-3 rounded-full bg-rose-500 inline-block"></span>
+                        <span class="w-3 h-3 rounded-full bg-amber-500 inline-block"></span>
+                        <span class="w-3 h-3 rounded-full bg-emerald-500 inline-block"></span>
+                        <span class="text-xs text-slate-400 font-mono ml-3 hidden sm:inline">RayTech Log Viewer — https://app.test/log-viewer</span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span class="text-[11px] font-mono px-2 py-0.5 rounded bg-brand-500/20 text-brand-300 border border-brand-500/30">
+                            <i class="fas fa-sync-alt fa-spin text-[10px] mr-1"></i> Auto-Refresh: 10s
+                        </span>
+                        <div class="text-xs text-slate-400">
+                            <i class="fas fa-moon cursor-pointer hover:text-white transition" title="Toggle Theme"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Window Content Layout -->
+                <div class="grid grid-cols-1 lg:grid-cols-12 min-h-[580px]">
+                    
+                    <!-- Simulator Left Sidebar -->
+                    <div class="lg:col-span-3 bg-dark-900 border-r border-slate-800 p-4 flex flex-col justify-between">
+                        <div>
+                            <!-- Sidebar Search & Calendar Jump -->
+                            <div class="flex items-center gap-2 mb-4">
+                                <div class="relative flex-1">
+                                    <i class="fas fa-search absolute left-3 top-2.5 text-xs text-slate-500"></i>
+                                    <input type="text" placeholder="Filter files..." class="w-full bg-dark-950 border border-slate-800 rounded-lg pl-8 pr-3 py-1.5 text-xs text-slate-300 placeholder-slate-500 focus:outline-none focus:border-brand-500">
+                                </div>
+                                <button class="p-2 rounded-lg bg-dark-950 border border-slate-800 hover:border-brand-500 text-slate-300 text-xs" title="Jump to Calendar Date">
+                                    <i class="far fa-calendar-alt text-brand-400"></i>
+                                </button>
+                            </div>
+
+                            <!-- Category 1: Laravel Application Logs -->
+                            <div class="text-[11px] font-mono font-bold tracking-wider uppercase text-slate-400 mb-2 px-1 flex items-center justify-between">
+                                <span>Laravel Logs</span>
+                                <span class="text-[10px] bg-slate-800 text-slate-300 px-1.5 py-0.2 rounded font-sans">3</span>
+                            </div>
+                            <div class="space-y-1 mb-6 font-mono text-xs">
+                                <div class="flex items-center justify-between px-3 py-2 rounded-lg bg-brand-600/15 border border-brand-500/30 text-white font-medium cursor-pointer">
+                                    <div class="flex items-center gap-2 truncate">
+                                        <i class="far fa-file-alt text-brand-400"></i>
+                                        <span class="truncate">laravel.log</span>
+                                    </div>
+                                    <span class="text-[10px] text-slate-400">2.4 MB</span>
+                                </div>
+                                <div class="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-slate-800/60 text-slate-400 hover:text-slate-200 cursor-pointer transition">
+                                    <div class="flex items-center gap-2 truncate">
+                                        <i class="far fa-file-alt text-slate-500"></i>
+                                        <span class="truncate">laravel-2026-11-24.log</span>
+                                    </div>
+                                    <span class="text-[10px] text-slate-500">840 KB</span>
+                                </div>
+                                <div class="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-slate-800/60 text-slate-400 hover:text-slate-200 cursor-pointer transition">
+                                    <div class="flex items-center gap-2 truncate">
+                                        <span class="text-[9px] font-bold px-1 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30">GZ</span>
+                                        <span class="truncate">laravel-2026-11-20.log.gz</span>
+                                    </div>
+                                    <span class="text-[10px] text-slate-500">142 KB</span>
+                                </div>
+                            </div>
+
+                            <!-- Category 2: Server Logs -->
+                            <div class="text-[11px] font-mono font-bold tracking-wider uppercase text-slate-400 mb-2 px-1 flex items-center justify-between">
+                                <span>Server Logs</span>
+                                <span class="text-[10px] bg-slate-800 text-slate-300 px-1.5 py-0.2 rounded font-sans">2</span>
+                            </div>
+                            <div class="space-y-1 font-mono text-xs">
+                                <div class="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-slate-800/60 text-slate-400 hover:text-slate-200 cursor-pointer transition">
+                                    <div class="flex items-center gap-2 truncate">
+                                        <i class="fas fa-server text-slate-500"></i>
+                                        <span class="truncate">php_error.log</span>
+                                    </div>
+                                    <span class="text-[10px] text-slate-500">12 KB</span>
+                                </div>
+                                <div class="flex items-center justify-between px-3 py-2 rounded-lg hover:bg-slate-800/60 text-slate-400 hover:text-slate-200 cursor-pointer transition">
+                                    <div class="flex items-center gap-2 truncate">
+                                        <i class="fas fa-server text-slate-500"></i>
+                                        <span class="truncate">apache_error.log</span>
+                                    </div>
+                                    <span class="text-[10px] text-slate-500">68 KB</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Sidebar Footer Stats -->
+                        <div class="pt-4 border-t border-slate-800 text-xs text-slate-500 flex items-center justify-between font-mono">
+                            <span>Tail: 500 lines</span>
+                            <span class="text-emerald-400"><i class="fas fa-check-circle"></i> Live Sync</span>
+                        </div>
+                    </div>
+
+                    <!-- Simulator Main Log Panel -->
+                    <div class="lg:col-span-9 bg-dark-950 p-5 flex flex-col">
+                        
+                        <!-- Toolbar Controls -->
+                        <div class="flex flex-wrap items-center justify-between gap-3 pb-4 mb-4 border-b border-slate-800">
+                            <!-- Live Mock Search -->
+                            <div class="relative flex-1 min-w-[240px]">
+                                <i class="fas fa-search absolute left-3 top-2.5 text-xs text-slate-500"></i>
+                                <input type="text" id="mockSearchInput" oninput="filterMockLogs()" placeholder="Live search message, class, or trace... (Press / to focus)" class="w-full bg-dark-900 border border-slate-700 rounded-lg pl-9 pr-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-brand-500 transition font-mono">
+                            </div>
+
+                            <!-- Severity Filter Pills -->
+                            <div class="flex items-center gap-1.5 overflow-x-auto text-xs font-mono">
+                                <button onclick="filterMockLevel('all')" class="mock-filter-btn px-2.5 py-1 rounded bg-slate-700 text-white font-bold text-[11px]">ALL</button>
+                                <button onclick="filterMockLevel('error')" class="mock-filter-btn px-2.5 py-1 rounded bg-rose-500/15 text-rose-400 border border-rose-500/30 text-[11px] hover:bg-rose-500/30">ERROR</button>
+                                <button onclick="filterMockLevel('warning')" class="mock-filter-btn px-2.5 py-1 rounded bg-amber-500/15 text-amber-400 border border-amber-500/30 text-[11px] hover:bg-amber-500/30">WARN</button>
+                                <button onclick="filterMockLevel('info')" class="mock-filter-btn px-2.5 py-1 rounded bg-sky-500/15 text-sky-400 border border-sky-500/30 text-[11px] hover:bg-sky-500/30">INFO</button>
+                            </div>
+
+                            <!-- Action Toolbar Icons -->
+                            <div class="flex items-center gap-1.5 text-xs font-mono">
+                                <button class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 flex items-center gap-1.5">
+                                    <i class="fas fa-sort-amount-down text-brand-400"></i> Newest First
+                                </button>
+                                <button class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 flex items-center gap-1.5" title="Export CSV / JSON">
+                                    <i class="fas fa-file-export text-slate-400"></i> Export
+                                </button>
+                                <button class="px-2.5 py-1 rounded bg-rose-500/15 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30 flex items-center gap-1.5" title="Clear log">
+                                    <i class="fas fa-trash-alt"></i> Clear
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Mock Entries List -->
+                        <div id="mockLogsContainer" class="space-y-3 font-mono text-xs flex-1">
+                            
+                            <!-- LOG ENTRY 1 (ERROR) — Expandable Accordion Item -->
+                            <div class="mock-log-item rounded-xl border border-rose-500/40 bg-dark-900/90 overflow-hidden shadow-lg" data-level="error">
+                                <!-- Summary Header Row -->
+                                <div onclick="toggleMockAccordion('mockAccordion1')" class="p-3.5 flex items-center justify-between cursor-pointer hover:bg-slate-800/50 transition">
+                                    <div class="flex items-center gap-3 min-w-0">
+                                        <i id="mockChevron1" class="fas fa-chevron-down text-rose-400 transition-transform"></i>
+                                        <span class="px-2 py-0.5 rounded font-bold text-[10px] bg-rose-500 text-white">local.ERROR</span>
+                                        <span class="text-slate-400 text-[11px] whitespace-nowrap">2026-11-24 10:14:02</span>
+                                        <span class="text-slate-100 font-semibold truncate">Call to undefined function str()</span>
+                                    </div>
+                                    <div class="flex items-center gap-2 flex-shrink-0 ml-2">
+                                        <span class="text-[10px] px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">7 frames</span>
+                                        <button onclick="event.stopPropagation(); alert('Log copied to clipboard!')" class="p-1 text-slate-500 hover:text-white" title="Copy Log"><i class="far fa-copy"></i></button>
+                                    </div>
+                                </div>
+
+                                <!-- Accordion Body (Expanded by default to showcase power) -->
+                                <div id="mockAccordion1" class="border-t border-slate-800/80 p-4 bg-dark-950/70 space-y-3">
+                                    
+                                    <!-- Exception Location Card -->
+                                    <div class="p-3 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-200">
+                                        <div class="font-bold flex items-center gap-2 text-rose-400">
+                                            <i class="fas fa-exclamation-triangle"></i>
+                                            <span>Error: Call to undefined function str()</span>
+                                        </div>
+                                        <div class="text-[11px] text-slate-300 mt-1">
+                                            in <span class="text-sky-300">app/Http/Controllers/HomeController.php</span> on line <span class="text-amber-400 font-bold">42</span>
+                                        </div>
+                                    </div>
+
+                                    <!-- Stack Trace Tabs Header -->
+                                    <div class="flex items-center gap-4 border-b border-slate-800 text-[11px] pb-1.5 text-slate-400">
+                                        <span class="text-white font-bold border-b-2 border-brand-500 pb-1 cursor-pointer">Stack Trace (7)</span>
+                                        <span class="hover:text-white cursor-pointer pb-1">Context JSON</span>
+                                        <span class="hover:text-white cursor-pointer pb-1">Raw Log</span>
+                                    </div>
+
+                                    <!-- Stack Frames Display -->
+                                    <div class="space-y-1.5 text-[11px] pl-2 border-l-2 border-slate-800">
+                                        <div class="text-slate-300">
+                                            <span class="text-slate-500">#0</span> <span class="text-sky-400">app/Http/Controllers/HomeController.php(42):</span> <span class="text-white">renderView()</span>
+                                        </div>
+                                        <div class="text-slate-300">
+                                            <span class="text-slate-500">#1</span> <span class="text-sky-400">vendor/laravel/framework/src/Illuminate/Routing/Controller.php(54):</span> <span class="text-white">callAction('index', Array)</span>
+                                        </div>
+                                        <div class="text-slate-300">
+                                            <span class="text-slate-500">#2</span> <span class="text-sky-400">vendor/laravel/framework/src/Illuminate/Routing/ControllerDispatcher.php(43):</span> <span class="text-white">dispatch()</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- LOG ENTRY 2 (CRITICAL) -->
+                            <div class="mock-log-item rounded-xl border border-slate-800 bg-dark-900/60 overflow-hidden" data-level="error">
+                                <div class="p-3.5 flex items-center justify-between cursor-pointer hover:bg-slate-800/50 transition">
+                                    <div class="flex items-center gap-3 min-w-0">
+                                        <i class="fas fa-chevron-right text-slate-500"></i>
+                                        <span class="px-2 py-0.5 rounded font-bold text-[10px] bg-red-700 text-white">production.CRITICAL</span>
+                                        <span class="text-slate-400 text-[11px] whitespace-nowrap">2026-11-24 09:42:15</span>
+                                        <span class="text-slate-100 font-semibold truncate">Database connection timeout (10.0.0.42:3306)</span>
+                                    </div>
+                                    <div class="flex items-center gap-2 flex-shrink-0 ml-2">
+                                        <span class="text-[10px] px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">4 frames</span>
+                                        <button class="p-1 text-slate-500 hover:text-white"><i class="far fa-copy"></i></button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- LOG ENTRY 3 (WARNING) -->
+                            <div class="mock-log-item rounded-xl border border-slate-800 bg-dark-900/60 overflow-hidden" data-level="warning">
+                                <div class="p-3.5 flex items-center justify-between cursor-pointer hover:bg-slate-800/50 transition">
+                                    <div class="flex items-center gap-3 min-w-0">
+                                        <i class="fas fa-chevron-right text-slate-500"></i>
+                                        <span class="px-2 py-0.5 rounded font-bold text-[10px] bg-amber-500 text-slate-950">local.WARNING</span>
+                                        <span class="text-slate-400 text-[11px] whitespace-nowrap">2026-11-24 08:30:19</span>
+                                        <span class="text-slate-100 font-semibold truncate">Deprecated function call: utf8_encode() is deprecated in PHP 8.2+</span>
+                                    </div>
+                                    <div class="flex items-center gap-2 flex-shrink-0 ml-2">
+                                        <span class="text-[10px] px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">1 frame</span>
+                                        <button class="p-1 text-slate-500 hover:text-white"><i class="far fa-copy"></i></button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- LOG ENTRY 4 (INFO) -->
+                            <div class="mock-log-item rounded-xl border border-slate-800 bg-dark-900/60 overflow-hidden" data-level="info">
+                                <div class="p-3.5 flex items-center justify-between cursor-pointer hover:bg-slate-800/50 transition">
+                                    <div class="flex items-center gap-3 min-w-0">
+                                        <i class="fas fa-chevron-right text-slate-500"></i>
+                                        <span class="px-2 py-0.5 rounded font-bold text-[10px] bg-sky-500 text-white">production.INFO</span>
+                                        <span class="text-slate-400 text-[11px] whitespace-nowrap">2026-11-24 08:15:00</span>
+                                        <span class="text-slate-100 font-semibold truncate">Scheduled task completed: App\Jobs\ProcessDailyInvoices</span>
+                                    </div>
+                                    <div class="flex items-center gap-2 flex-shrink-0 ml-2">
+                                        <span class="text-[10px] px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700">0 frames</span>
+                                        <button class="p-1 text-slate-500 hover:text-white"><i class="far fa-copy"></i></button>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <!-- Live Tab Notification Simulation -->
+                        <div class="mt-4 pt-3 border-t border-slate-800 text-xs text-slate-400 flex items-center justify-between font-mono">
+                            <span class="flex items-center gap-2 text-rose-400">
+                                <span class="w-2 h-2 rounded-full bg-rose-500 animate-ping"></span>
+                                Tab Title Alert: 🔴 (1) New Error Detected!
+                            </span>
+                            <span class="text-slate-500">Showing 4 of 500 lines • Parsed in 2.1ms</span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+    </section>
+
+    <!-- ========================================================================= -->
+    <!-- 4. KEY FEATURES (THE 12 PILLARS) -->
+    <!-- ========================================================================= -->
+    <section id="features" class="py-24 z-10 relative">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            
+            <div class="text-center max-w-3xl mx-auto mb-16">
+                <span class="text-xs font-mono font-bold tracking-wider text-brand-400 uppercase bg-brand-500/10 px-3 py-1 rounded-full border border-brand-500/20">
+                    Engineered for Production
+                </span>
+                <h2 class="text-3xl sm:text-5xl font-extrabold text-white mt-3 tracking-tight">
+                    Everything You Need to Diagnose Laravel
+                </h2>
+                <p class="text-slate-400 text-base mt-3">
+                    Built to replace slow terminal commands and bloated third-party services with a lean, private in-house dashboard.
+                </p>
+            </div>
+
+            <!-- Features 12-Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                
+                <!-- Feature 1 -->
+                <div class="p-6 rounded-2xl bg-dark-900/60 border border-slate-800 hover:border-brand-500/50 transition group">
+                    <div class="w-12 h-12 rounded-xl bg-brand-500/10 text-brand-400 flex items-center justify-center text-xl mb-5 group-hover:scale-110 transition">
+                        <i class="fas fa-layer-group"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-white mb-2">Single-Line Headers &amp; Accordion</h3>
+                    <p class="text-sm text-slate-400 leading-relaxed">
+                        Every log record renders as a clean summary row with timestamp, severity badge, and clean message. Click to expand detailed stack traces with color-coded files and line numbers.
+                    </p>
+                </div>
+
+                <!-- Feature 2 -->
+                <div class="p-6 rounded-2xl bg-dark-900/60 border border-slate-800 hover:border-brand-500/50 transition group">
+                    <div class="w-12 h-12 rounded-xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center text-xl mb-5 group-hover:scale-110 transition">
+                        <i class="fas fa-sort-amount-down"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-white mb-2">Newest-First Chronological Sort</h3>
+                    <p class="text-sm text-slate-400 leading-relaxed">
+                        No more scrolling to the bottom of 100,000 lines. The latest errors appear right at the top (`desc` order) by default, with an instant toggle for oldest-first.
+                    </p>
+                </div>
+
+                <!-- Feature 3 -->
+                <div class="p-6 rounded-2xl bg-dark-900/60 border border-slate-800 hover:border-brand-500/50 transition group">
+                    <div class="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-xl mb-5 group-hover:scale-110 transition">
+                        <i class="fas fa-memory"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-white mb-2">64KB Reverse Seek Engine</h3>
+                    <p class="text-sm text-slate-400 leading-relaxed">
+                        Reads files from disk tail backwards in 64KB binary chunks. Never exhausts PHP memory (`memory_limit`) even on 50GB multi-year enterprise log files.
+                    </p>
+                </div>
+
+                <!-- Feature 4 -->
+                <div class="p-6 rounded-2xl bg-dark-900/60 border border-slate-800 hover:border-brand-500/50 transition group">
+                    <div class="w-12 h-12 rounded-xl bg-sky-500/10 text-sky-400 flex items-center justify-center text-xl mb-5 group-hover:scale-110 transition">
+                        <i class="fas fa-search"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-white mb-2">Instant 60 FPS Search</h3>
+                    <p class="text-sm text-slate-400 leading-relaxed">
+                        Debounced search synchronized with `window.requestAnimationFrame()`. Highlights matched keywords with native DOM nodes without innerHTML injection vulnerabilities.
+                    </p>
+                </div>
+
+                <!-- Feature 5 -->
+                <div class="p-6 rounded-2xl bg-dark-900/60 border border-slate-800 hover:border-brand-500/50 transition group">
+                    <div class="w-12 h-12 rounded-xl bg-purple-500/10 text-purple-400 flex items-center justify-center text-xl mb-5 group-hover:scale-110 transition">
+                        <i class="fas fa-file-archive"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-white mb-2">Compressed Logs (*.log.gz)</h3>
+                    <p class="text-sm text-slate-400 leading-relaxed">
+                        Automatically discovers and streams rotated `.log.gz` archives with a sliding memory window. No need to extract multi-gigabyte archives to disk.
+                    </p>
+                </div>
+
+                <!-- Feature 6 -->
+                <div class="p-6 rounded-2xl bg-dark-900/60 border border-slate-800 hover:border-brand-500/50 transition group">
+                    <div class="w-12 h-12 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center text-xl mb-5 group-hover:scale-110 transition">
+                        <i class="far fa-calendar-alt"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-white mb-2">Calendar Date Picker Jump</h3>
+                    <p class="text-sm text-slate-400 leading-relaxed">
+                        Jump to any daily log file (e.g. `laravel-2026-11-24.log`) with one click using the compact sidebar calendar picker. Highlighted dates indicate available logs.
+                    </p>
+                </div>
+
+                <!-- Feature 7 -->
+                <div class="p-6 rounded-2xl bg-dark-900/60 border border-slate-800 hover:border-brand-500/50 transition group">
+                    <div class="w-12 h-12 rounded-xl bg-rose-500/10 text-rose-400 flex items-center justify-center text-xl mb-5 group-hover:scale-110 transition">
+                        <i class="fas fa-bell"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-white mb-2">Live Auto-Refresh &amp; Alerts</h3>
+                    <p class="text-sm text-slate-400 leading-relaxed">
+                        Zero-flicker background AJAX polling (5s, 10s, 30s). Visual toast notifications and browser tab flashing (`🔴 (X) New Error!`) when errors arrive.
+                    </p>
+                </div>
+
+                <!-- Feature 8 -->
+                <div class="p-6 rounded-2xl bg-dark-900/60 border border-slate-800 hover:border-brand-500/50 transition group">
+                    <div class="w-12 h-12 rounded-xl bg-teal-500/10 text-teal-400 flex items-center justify-center text-xl mb-5 group-hover:scale-110 transition">
+                        <i class="fas fa-lock"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-white mb-2">Password Protection &amp; Lockout</h3>
+                    <p class="text-sm text-slate-400 leading-relaxed">
+                        Standalone Bcrypt password prompt independent of database users. Automatically locks out visitors for 60 seconds after 3 failed attempts.
+                    </p>
+                </div>
+
+                <!-- Feature 9 -->
+                <div class="p-6 rounded-2xl bg-dark-900/60 border border-slate-800 hover:border-brand-500/50 transition group">
+                    <div class="w-12 h-12 rounded-xl bg-red-500/10 text-red-400 flex items-center justify-center text-xl mb-5 group-hover:scale-110 transition">
+                        <i class="fas fa-bomb"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-white mb-2">Panic Destroy Hotkey (Ctrl+Shift+D)</h3>
+                    <p class="text-sm text-slate-400 leading-relaxed">
+                        Press <kbd class="px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 text-xs">Ctrl+Shift+D</kbd> in an emergency to instantly destroy authenticated sessions and close all open tabs across your browser via `BroadcastChannel`.
+                    </p>
+                </div>
+
+                <!-- Feature 10 -->
+                <div class="p-6 rounded-2xl bg-dark-900/60 border border-slate-800 hover:border-brand-500/50 transition group">
+                    <div class="w-12 h-12 rounded-xl bg-cyan-500/10 text-cyan-400 flex items-center justify-center text-xl mb-5 group-hover:scale-110 transition">
+                        <i class="fas fa-eye-slash"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-white mb-2">Encrypted Global Hotkey (Ctrl+Shift+X)</h3>
+                    <p class="text-sm text-slate-400 leading-relaxed">
+                        Open `/log-viewer` from any page in your application. Injected as heavily obfuscated bytecode stream: secret keys and URLs are 100% hidden in HTML page source.
+                    </p>
+                </div>
+
+                <!-- Feature 11 -->
+                <div class="p-6 rounded-2xl bg-dark-900/60 border border-slate-800 hover:border-brand-500/50 transition group">
+                    <div class="w-12 h-12 rounded-xl bg-orange-500/10 text-orange-400 flex items-center justify-center text-xl mb-5 group-hover:scale-110 transition">
+                        <i class="fas fa-user-secret"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-white mb-2">Sensitive Data Redaction</h3>
+                    <p class="text-sm text-slate-400 leading-relaxed">
+                        Automatically redacts passwords, Bearer tokens, API keys, database credentials, credit cards, and `APP_KEY` as `[REDACTED]` before rendering to browser.
+                    </p>
+                </div>
+
+                <!-- Feature 12 -->
+                <div class="p-6 rounded-2xl bg-dark-900/60 border border-slate-800 hover:border-brand-500/50 transition group">
+                    <div class="w-12 h-12 rounded-xl bg-violet-500/10 text-violet-400 flex items-center justify-center text-xl mb-5 group-hover:scale-110 transition">
+                        <i class="fas fa-file-csv"></i>
+                    </div>
+                    <h3 class="text-lg font-bold text-white mb-2">One-Click CSV &amp; JSON Export</h3>
+                    <p class="text-sm text-slate-400 leading-relaxed">
+                        Export filtered records directly into clean JSON or RFC 4180 CSV encoded with UTF-8 BOM so stack traces and characters display seamlessly in Microsoft Excel.
+                    </p>
+                </div>
+
+            </div>
+
+        </div>
+    </section>
+
+    <!-- ========================================================================= -->
+    <!-- 5. INSTALLATION GUIDE (TABBED & ACCESSIBLE) -->
+    <!-- ========================================================================= -->
+    <section id="install" class="py-20 bg-dark-900/60 border-y border-slate-800 z-10 relative">
+        <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+            
+            <div class="text-center mb-12">
+                <span class="text-xs font-mono font-bold tracking-wider text-brand-400 uppercase bg-brand-500/10 px-3 py-1 rounded-full border border-brand-500/20">
+                    Get Started in 30 Seconds
+                </span>
+                <h2 class="text-3xl sm:text-4xl font-extrabold text-white mt-3 tracking-tight">
+                    Installation &amp; Setup
+                </h2>
+                <p class="text-slate-400 text-sm mt-2">
+                    Choose your preferred installation method. Zero database migrations required.
+                </p>
+            </div>
+
+            <!-- Install Method Tabs -->
+            <div class="flex items-center justify-center gap-2 mb-6">
+                <button onclick="switchInstallTab('tabComposer')" id="btnTabComposer" class="install-tab-btn px-4 py-2 rounded-xl text-xs font-bold font-mono transition bg-brand-600 text-white shadow-lg shadow-brand-600/30">
+                    1. Packagist (Standard)
+                </button>
+                <button onclick="switchInstallTab('tabGithub')" id="btnTabGithub" class="install-tab-btn px-4 py-2 rounded-xl text-xs font-bold font-mono transition bg-dark-950 text-slate-400 hover:text-white border border-slate-800">
+                    2. GitHub VCS
+                </button>
+                <button onclick="switchInstallTab('tabLocal')" id="btnTabLocal" class="install-tab-btn px-4 py-2 rounded-xl text-xs font-bold font-mono transition bg-dark-950 text-slate-400 hover:text-white border border-slate-800">
+                    3. Local Symlink
+                </button>
+            </div>
+
+            <!-- Tab Content 1: Packagist -->
+            <div id="tabComposer" class="install-content-panel rounded-2xl bg-dark-950 border border-slate-800 p-6 space-y-6">
+                <div>
+                    <div class="text-xs font-mono text-slate-400 mb-2 flex items-center justify-between">
+                        <span>Step 1: Install Package via Composer</span>
+                        <button onclick="copyToClipboard('composer require raytech/raytech-log-viewer', 'btnC1')" id="btnC1" class="text-brand-400 hover:text-white text-xs"><i class="far fa-copy"></i> Copy</button>
+                    </div>
+                    <div class="p-3.5 rounded-xl bg-slate-900 border border-slate-800 font-mono text-xs text-slate-200">
+                        <span class="text-brand-400 select-none">$ </span>composer require raytech/raytech-log-viewer
+                    </div>
+                </div>
+
+                <div>
+                    <div class="text-xs font-mono text-slate-400 mb-2 flex items-center justify-between">
+                        <span>Step 2: Publish Config &amp; Pre-compiled Assets</span>
+                        <button onclick="copyToClipboard('php artisan raytech-log-viewer:install', 'btnC2')" id="btnC2" class="text-brand-400 hover:text-white text-xs"><i class="far fa-copy"></i> Copy</button>
+                    </div>
+                    <div class="p-3.5 rounded-xl bg-slate-900 border border-slate-800 font-mono text-xs text-slate-200">
+                        <span class="text-brand-400 select-none">$ </span>php artisan raytech-log-viewer:install
+                    </div>
+                </div>
+
+                <div>
+                    <div class="text-xs font-mono text-slate-400 mb-2">Step 3: Open in Browser</div>
+                    <div class="p-3.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 font-mono text-xs text-emerald-300">
+                        Navigate to: <strong>https://your-domain.test/log-viewer</strong>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab Content 2: GitHub VCS -->
+            <div id="tabGithub" class="install-content-panel hidden rounded-2xl bg-dark-950 border border-slate-800 p-6 space-y-6">
+                <div>
+                    <div class="text-xs font-mono text-slate-400 mb-2">Install directly from GitHub Repository:</div>
+                    <div class="p-3.5 rounded-xl bg-slate-900 border border-slate-800 font-mono text-xs text-slate-200 space-y-2">
+                        <div><span class="text-brand-400 select-none">$ </span>composer config repositories.raytech-log-viewer vcs https://github.com/umesh240/log-viewer.git</div>
+                        <div><span class="text-brand-400 select-none">$ </span>composer require raytech/raytech-log-viewer:dev-main</div>
+                        <div><span class="text-brand-400 select-none">$ </span>php artisan raytech-log-viewer:install</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tab Content 3: Local Symlink -->
+            <div id="tabLocal" class="install-content-panel hidden rounded-2xl bg-dark-950 border border-slate-800 p-6 space-y-6">
+                <div>
+                    <div class="text-xs font-mono text-slate-400 mb-2">Local Development (composer.json path repository):</div>
+                    <pre class="p-3.5 rounded-xl bg-slate-900 border border-slate-800 font-mono text-xs text-slate-300 overflow-x-auto"><code>{
+    "repositories": [
+        {
+            "type": "path",
+            "url": "E:/wamp/www/log_plugin",
+            "options": { "symlink": true }
+        }
+    ],
+    "require": {
+        "raytech/raytech-log-viewer": "*"
+    }
+}</code></pre>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- ========================================================================= -->
+    <!-- 6. ONE-CLICK COPY ENVIRONMENT CONFIG (.ENV) -->
+    <!-- ========================================================================= -->
+    <section id="env-config" class="py-20 z-10 relative">
+        <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+            
+            <div class="flex flex-col sm:flex-row sm:items-end justify-between mb-8 gap-4">
+                <div>
+                    <span class="text-xs font-mono font-bold tracking-wider text-brand-400 uppercase bg-brand-500/10 px-3 py-1 rounded-full border border-brand-500/20">
+                        Configuration
+                    </span>
+                    <h2 class="text-3xl sm:text-4xl font-extrabold text-white mt-3 tracking-tight">
+                        Environment Settings (.env)
+                    </h2>
+                    <p class="text-slate-400 text-sm mt-1">
+                        <strong>Optional by design:</strong> All variables have safe defaults. You only need to keep what you customize.
+                    </p>
+                </div>
+                <button onclick="copyToClipboard(document.getElementById('fullEnvSnippet').innerText, 'btnCopyAllEnv')" id="btnCopyAllEnv" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-semibold text-xs tracking-wide transition shadow-lg shadow-brand-600/30">
+                    <i class="far fa-copy text-sm"></i> Copy All .env Settings
+                </button>
+            </div>
+
+            <!-- Pre-formatted .env Code Box -->
+            <div class="rounded-2xl bg-dark-950 border border-slate-800 overflow-hidden shadow-2xl">
+                <div class="bg-dark-900 px-4 py-2.5 border-b border-slate-800 flex items-center justify-between text-xs font-mono text-slate-400">
+                    <span>.env (Copy &amp; Paste Ready)</span>
+                    <span class="text-slate-500">dotenv format</span>
+                </div>
+                <pre class="p-5 font-mono text-xs text-slate-300 leading-relaxed overflow-x-auto max-h-[460px]"><code id="fullEnvSnippet"># ==============================================================================
+# RayTech Log Viewer - Complete Environment Configuration
+# ==============================================================================
+# Note: You only need to keep the variables you want to customize.
+# Any variable omitted here will automatically use its package default.
+# ==============================================================================
+
+# --- General &amp; Routing ---
+LOG_VIEWER_ENABLED=true
+LOG_VIEWER_ROUTE_PREFIX=log-viewer
+LOG_VIEWER_MIDDLEWARE=web
+# LOG_VIEWER_DOMAIN=admin.your-app.com
+
+# --- UI Theme &amp; Branding ---
+LOG_VIEWER_THEME=light
+LOG_VIEWER_PRIMARY_COLOR="#1f6feb"
+LOG_VIEWER_TITLE="RayTech Log Viewer"
+LOG_VIEWER_LOGO="vendor/raytech-log-viewer/img/default_logo.png"
+LOG_VIEWER_SHOW_BACK_BUTTON=true
+LOG_VIEWER_BACK_URL="/"
+LOG_VIEWER_BACK_URL_NAME="Back To Home"
+
+# --- Log Discovery &amp; Directories ---
+LOG_VIEWER_SHOW_SERVER_LOGS=false
+LOG_VIEWER_SCAN_SERVER_LOGS=false
+# LOG_VIEWER_DIRS="/var/log/custom,storage/logs/workers"
+# LOG_VIEWER_FILES="storage/logs/cron.log,storage/logs/queue.log"
+
+# --- Features &amp; Action Controls ---
+LOG_VIEWER_ORDER=desc
+LOG_VIEWER_ALLOW_DOWNLOAD=true
+LOG_VIEWER_ALLOW_CLEAR=true
+LOG_VIEWER_ALLOW_DAYS_CLEANUP=false
+LOG_VIEWER_ALLOW_RAW=true
+LOG_VIEWER_USE_CDN=false
+
+# --- Global Secret Shortcut (Open from anywhere via Ctrl+Shift+X) ---
+LOG_VIEWER_SHORTCUT_ENABLED=false
+LOG_VIEWER_SHORTCUT_AUTO_INJECT=true
+LOG_VIEWER_SHORTCUT_ENCRYPT=true
+LOG_VIEWER_SHORTCUT_KEY=x
+LOG_VIEWER_SHORTCUT_CTRL=true
+LOG_VIEWER_SHORTCUT_SHIFT=true
+LOG_VIEWER_SHORTCUT_ALT=false
+LOG_VIEWER_SHORTCUT_NEW_TAB=true
+
+# --- Security, Password Protection &amp; Rate Limiting ---
+LOG_VIEWER_PASSWORD_PROTECTED=false
+# Default hash of 'test26'. Generate custom hash: php artisan raytech-log-viewer:hash &lt;password&gt;
+LOG_VIEWER_PASSWORD="$2y$10$ZfUboNTMgBUhU5kVfoWyTu8X4B4WMr7trhWrjZGnpm4u9PLiDfv2W"
+# IP Whitelist: exact IPs, wildcards ('192.168.1.*'), or CIDR ('10.0.0.0/8')
+# LOG_VIEWER_ALLOWED_IPS="127.0.0.1, ::1, 192.168.1.*"
+LOG_VIEWER_MAX_ATTEMPTS=3
+LOG_VIEWER_LOCKOUT_REDIRECT="/"
+LOG_VIEWER_LOCKOUT_DURATION=60
+LOG_VIEWER_DESTROY_SHORTCUT_ENABLED=true
+LOG_VIEWER_DESTROY_SHORTCUT_KEY=d
+LOG_VIEWER_REDACTION_ENABLED=true</code></pre>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- ========================================================================= -->
+    <!-- 7. SECURITY & ACCESS CONTROL -->
+    <!-- ========================================================================= -->
+    <section id="security" class="py-20 bg-dark-900/60 border-y border-slate-800 z-10 relative">
+        <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+            
+            <div class="text-center max-w-3xl mx-auto mb-16">
+                <span class="text-xs font-mono font-bold tracking-wider text-rose-400 uppercase bg-rose-500/10 px-3 py-1 rounded-full border border-rose-500/20">
+                    Enterprise Hardened
+                </span>
+                <h2 class="text-3xl sm:text-4xl font-extrabold text-white mt-3 tracking-tight">
+                    Multi-Layer Security &amp; Access Gates
+                </h2>
+                <p class="text-slate-400 text-sm mt-2">
+                    Never worry about exposing private server logs or database credentials.
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Gate 1 -->
+                <div class="p-6 rounded-2xl bg-dark-950 border border-slate-800">
+                    <div class="text-brand-400 text-2xl mb-4"><i class="fas fa-network-wired"></i></div>
+                    <h3 class="text-base font-bold text-white mb-2">IP &amp; CIDR Subnet Whitelist</h3>
+                    <p class="text-xs text-slate-400 leading-relaxed mb-4">
+                        Restrict access to office VPNs or developer machines. Supports exact IPs, wildcards, and CIDR subnets.
+                    </p>
+                    <div class="p-2.5 rounded-lg bg-slate-900 border border-slate-800 font-mono text-[11px] text-brand-300">
+                        LOG_VIEWER_ALLOWED_IPS="127.0.0.1, 192.168.1.*, 10.0.0.0/8"
+                    </div>
+                </div>
+
+                <!-- Gate 2 -->
+                <div class="p-6 rounded-2xl bg-dark-950 border border-slate-800">
+                    <div class="text-indigo-400 text-2xl mb-4"><i class="fas fa-key"></i></div>
+                    <h3 class="text-base font-bold text-white mb-2">Bcrypt Password Screen</h3>
+                    <p class="text-xs text-slate-400 leading-relaxed mb-4">
+                        Independent password challenge screen with rate-limiting. Visitors receive 3 attempts before being locked out.
+                    </p>
+                    <div class="p-2.5 rounded-lg bg-slate-900 border border-slate-800 font-mono text-[11px] text-indigo-300">
+                        php artisan raytech-log-viewer:hash mySecretPassword!
+                    </div>
+                </div>
+
+                <!-- Gate 3 -->
+                <div class="p-6 rounded-2xl bg-dark-950 border border-slate-800">
+                    <div class="text-rose-400 text-2xl mb-4"><i class="fas fa-ban"></i></div>
+                    <h3 class="text-base font-bold text-white mb-2">Sensitive File Blocker</h3>
+                    <p class="text-xs text-slate-400 leading-relaxed mb-4">
+                        Strictly rejects reading or disclosing `.env*`, `*.php`, `*.key`, `*.pem`, `*.sql`, `id_rsa*` or database files.
+                    </p>
+                    <div class="p-2.5 rounded-lg bg-slate-900 border border-slate-800 font-mono text-[11px] text-rose-300">
+                        Access Denied: Protected System File
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- ========================================================================= -->
+    <!-- 8. KEYBOARD SHORTCUTS QUICK REFERENCE -->
+    <!-- ========================================================================= -->
+    <section class="py-20 z-10 relative">
+        <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+            
+            <div class="text-center mb-12">
+                <span class="text-xs font-mono font-bold tracking-wider text-brand-400 uppercase bg-brand-500/10 px-3 py-1 rounded-full border border-brand-500/20">
+                    Power-User Experience
+                </span>
+                <h2 class="text-3xl sm:text-4xl font-extrabold text-white mt-3 tracking-tight">
+                    Keyboard Navigation Cheat Sheet
+                </h2>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+                <div class="p-4 rounded-xl bg-dark-900/60 border border-slate-800 flex items-center justify-between">
+                    <span class="text-xs text-slate-300">Open Log Viewer</span>
+                    <kbd class="px-2 py-1 rounded bg-slate-800 border border-slate-700 text-xs font-mono text-brand-400 font-bold">Ctrl+Shift+X</kbd>
+                </div>
+                <div class="p-4 rounded-xl bg-dark-900/60 border border-slate-800 flex items-center justify-between">
+                    <span class="text-xs text-slate-300">Emergency Panic Close</span>
+                    <kbd class="px-2 py-1 rounded bg-slate-800 border border-slate-700 text-xs font-mono text-rose-400 font-bold">Ctrl+Shift+D</kbd>
+                </div>
+                <div class="p-4 rounded-xl bg-dark-900/60 border border-slate-800 flex items-center justify-between">
+                    <span class="text-xs text-slate-300">Focus Search Bar</span>
+                    <kbd class="px-2 py-1 rounded bg-slate-800 border border-slate-700 text-xs font-mono text-slate-200 font-bold">/</kbd>
+                </div>
+                <div class="p-4 rounded-xl bg-dark-900/60 border border-slate-800 flex items-center justify-between">
+                    <span class="text-xs text-slate-300">Next / Prev Record</span>
+                    <kbd class="px-2 py-1 rounded bg-slate-800 border border-slate-700 text-xs font-mono text-slate-200 font-bold">j / k</kbd>
+                </div>
+                <div class="p-4 rounded-xl bg-dark-900/60 border border-slate-800 flex items-center justify-between">
+                    <span class="text-xs text-slate-300">Expand / Collapse</span>
+                    <kbd class="px-2 py-1 rounded bg-slate-800 border border-slate-700 text-xs font-mono text-slate-200 font-bold">Enter / Space</kbd>
+                </div>
+                <div class="p-4 rounded-xl bg-dark-900/60 border border-slate-800 flex items-center justify-between">
+                    <span class="text-xs text-slate-300">Copy Selected Log</span>
+                    <kbd class="px-2 py-1 rounded bg-slate-800 border border-slate-700 text-xs font-mono text-slate-200 font-bold">c</kbd>
+                </div>
+                <div class="p-4 rounded-xl bg-dark-900/60 border border-slate-800 flex items-center justify-between">
+                    <span class="text-xs text-slate-300">Clear Search / Selection</span>
+                    <kbd class="px-2 py-1 rounded bg-slate-800 border border-slate-700 text-xs font-mono text-slate-200 font-bold">Esc</kbd>
+                </div>
+                <div class="p-4 rounded-xl bg-dark-900/60 border border-slate-800 flex items-center justify-between">
+                    <span class="text-xs text-slate-300">Toggle Sidebar</span>
+                    <kbd class="px-2 py-1 rounded bg-slate-800 border border-slate-700 text-xs font-mono text-slate-200 font-bold">Ctrl+B</kbd>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- ========================================================================= -->
+    <!-- 9. FREQUENTLY ASKED QUESTIONS (FAQ) -->
+    <!-- ========================================================================= -->
+    <section id="faq" class="py-20 bg-dark-900/60 border-t border-slate-800 z-10 relative">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            
+            <div class="text-center mb-14">
+                <span class="text-xs font-mono font-bold tracking-wider text-brand-400 uppercase bg-brand-500/10 px-3 py-1 rounded-full border border-brand-500/20">
+                    Got Questions?
+                </span>
+                <h2 class="text-3xl sm:text-4xl font-extrabold text-white mt-3 tracking-tight">
+                    Frequently Asked Questions
+                </h2>
+            </div>
+
+            <div class="space-y-4">
+                <!-- Q1 -->
+                <div class="p-5 rounded-2xl bg-dark-950 border border-slate-800">
+                    <h3 class="text-base font-bold text-white mb-2 flex items-center gap-2">
+                        <i class="far fa-question-circle text-brand-400"></i>
+                        Will this package slow down my application or consume high RAM on large logs?
+                    </h3>
+                    <p class="text-sm text-slate-400 leading-relaxed pl-6">
+                        <strong>No.</strong> The package uses a 64KB reverse binary tail buffer (`fseek`). It reads from the end of the file backwards and stops as soon as the requested lines (e.g. 500 lines) are satisfied. It never loads entire multi-gigabyte log files into PHP memory.
+                    </p>
+                </div>
+
+                <!-- Q2 -->
+                <div class="p-5 rounded-2xl bg-dark-950 border border-slate-800">
+                    <h3 class="text-base font-bold text-white mb-2 flex items-center gap-2">
+                        <i class="far fa-question-circle text-brand-400"></i>
+                        Do I need database migrations or Redis to use this plugin?
+                    </h3>
+                    <p class="text-sm text-slate-400 leading-relaxed pl-6">
+                        <strong>Zero database footprint.</strong> The plugin runs completely on disk without migrations, tables, models, or Redis dependencies. You can install or remove it cleanly in seconds.
+                    </p>
+                </div>
+
+                <!-- Q3 -->
+                <div class="p-5 rounded-2xl bg-dark-950 border border-slate-800">
+                    <h3 class="text-base font-bold text-white mb-2 flex items-center gap-2">
+                        <i class="far fa-question-circle text-brand-400"></i>
+                        Can I run this in air-gapped or offline intranet environments?
+                    </h3>
+                    <p class="text-sm text-slate-400 leading-relaxed pl-6">
+                        <strong>Yes, 100%.</strong> By default (`LOG_VIEWER_USE_CDN=false`), all FontAwesome icons, SVG webfonts, styles, and scripts are bundled locally inside the package. No external network requests are made.
+                    </p>
+                </div>
+
+                <!-- Q4 -->
+                <div class="p-5 rounded-2xl bg-dark-950 border border-slate-800">
+                    <h3 class="text-base font-bold text-white mb-2 flex items-center gap-2">
+                        <i class="far fa-question-circle text-brand-400"></i>
+                        Will anyone see my secret hotkey in browser "View Source"?
+                    </h3>
+                    <p class="text-sm text-slate-400 leading-relaxed pl-6">
+                        <strong>No.</strong> When `LOG_VIEWER_SHORTCUT_ENCRYPT=true` (enabled by default), the injected script is compiled into an encrypted dynamic XOR bytecode stream. Inspecting page source reveals zero plain-text URLs, trigger keys, or logout endpoints.
+                    </p>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- ========================================================================= -->
+    <!-- 10. CALL TO ACTION (CTA) -->
+    <!-- ========================================================================= -->
+    <section class="py-24 z-10 relative overflow-hidden text-center">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 class="text-4xl sm:text-5xl font-extrabold text-white tracking-tight mb-6">
+                Ready to Upgrade Your <br>
+                <span class="bg-gradient-to-r from-brand-400 to-indigo-300 bg-clip-text text-transparent">Laravel Logging Experience?</span>
+            </h2>
+            <p class="text-slate-300 text-lg mb-10 max-w-2xl mx-auto font-light">
+                Install RayTech Log Viewer today and eliminate messy log inspection forever. Free, open-source, and ready for production.
+            </p>
+            <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+                <button onclick="copyToClipboard('composer require raytech/raytech-log-viewer', 'btnCtaCopy')" id="btnCtaCopy" class="inline-flex items-center gap-3 px-8 py-4 rounded-xl bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-500 hover:to-indigo-500 text-white font-bold text-sm tracking-wide shadow-xl shadow-brand-600/30 transition transform hover:-translate-y-0.5">
+                    <i class="fas fa-terminal"></i> composer require raytech/raytech-log-viewer
+                </button>
+                <a href="https://github.com/umesh240/log-viewer" target="_blank" class="inline-flex items-center gap-2 px-6 py-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-sm font-semibold transition">
+                    <i class="fab fa-github text-base"></i> View on GitHub
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- ========================================================================= -->
+    <!-- 11. FOOTER -->
+    <!-- ========================================================================= -->
+    <footer class="bg-dark-950 border-t border-slate-800/80 py-12 z-10 relative text-xs text-slate-500">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-6">
+            <div class="flex items-center gap-3">
+                <img src="../../public/img/default_logo.png" alt="RayTech Logo" class="w-6 h-6 rounded object-cover" onerror="this.src='https://raw.githubusercontent.com/umesh240/log-viewer/main/public/img/default_logo.png'">
+                <span>RayTech Log Viewer &copy; 2026. Released under the <strong>MIT License</strong>.</span>
+            </div>
+            <div class="flex items-center gap-6">
+                <a href="https://github.com/umesh240/log-viewer" target="_blank" class="hover:text-slate-300 transition">GitHub</a>
+                <a href="https://packagist.org/packages/raytech/raytech-log-viewer" target="_blank" class="hover:text-slate-300 transition">Packagist</a>
+                <a href="#install" class="hover:text-slate-300 transition">Install</a>
+                <a href="#env-config" class="hover:text-slate-300 transition">Config</a>
+            </div>
+        </div>
+    </footer>
+
+    <!-- ========================================================================= -->
+    <!-- JAVASCRIPT: INTERACTION & SIMULATION CONTROLS -->
+    <!-- ========================================================================= -->
+    <script>
+        // Copy to clipboard helper with button text feedback
+        function copyToClipboard(text, buttonId) {
+            navigator.clipboard.writeText(text).then(function() {
+                var btn = document.getElementById(buttonId);
+                if (btn) {
+                    var originalHtml = btn.innerHTML;
+                    btn.innerHTML = '<i class="fas fa-check text-emerald-400"></i> <span>Copied!</span>';
+                    setTimeout(function() {
+                        btn.innerHTML = originalHtml;
+                    }, 2200);
+                }
+            }).catch(function() {
+                alert('Command copied: ' + text);
+            });
+        }
+
+        // Toggle Mock Accordion in Simulator
+        function toggleMockAccordion(id) {
+            var el = document.getElementById(id);
+            var chevron = document.getElementById('mockChevron1');
+            if (el) {
+                if (el.classList.contains('hidden')) {
+                    el.classList.remove('hidden');
+                    if (chevron) chevron.classList.remove('-rotate-90');
+                } else {
+                    el.classList.add('hidden');
+                    if (chevron) chevron.classList.add('-rotate-90');
+                }
+            }
+        }
+
+        // Filter Mock Logs by Level
+        function filterMockLevel(level) {
+            var items = document.querySelectorAll('.mock-log-item');
+            var buttons = document.querySelectorAll('.mock-filter-btn');
+            
+            buttons.forEach(function(b) {
+                b.classList.remove('ring-2', 'ring-brand-400');
+            });
+
+            items.forEach(function(item) {
+                if (level === 'all' || item.getAttribute('data-level') === level) {
+                    item.style.display = 'block';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        }
+
+        // Live Mock Search Filter
+        function filterMockLogs() {
+            var q = document.getElementById('mockSearchInput').value.toLowerCase();
+            var items = document.querySelectorAll('.mock-log-item');
+            items.forEach(function(item) {
+                var text = item.innerText.toLowerCase();
+                if (!q || text.includes(q)) {
+                    item.style.display = 'block';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        }
+
+        // Keyboard Shortcut: press '/' to focus mock search bar
+        document.addEventListener('keydown', function(e) {
+            if (e.key === '/' && document.activeElement.tagName !== 'INPUT') {
+                e.preventDefault();
+                var search = document.getElementById('mockSearchInput');
+                if (search) {
+                    search.focus();
+                    search.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }
+        });
+
+        // Switch Installation Tabs
+        function switchInstallTab(tabId) {
+            var panels = document.querySelectorAll('.install-content-panel');
+            var buttons = document.querySelectorAll('.install-tab-btn');
+
+            panels.forEach(function(p) { p.classList.add('hidden'); });
+            buttons.forEach(function(b) {
+                b.classList.remove('bg-brand-600', 'text-white', 'shadow-lg', 'shadow-brand-600/30');
+                b.classList.add('bg-dark-950', 'text-slate-400', 'border', 'border-slate-800');
+            });
+
+            var targetPanel = document.getElementById(tabId);
+            if (targetPanel) targetPanel.classList.remove('hidden');
+
+            var btn = null;
+            if (tabId === 'tabComposer') btn = document.getElementById('btnTabComposer');
+            if (tabId === 'tabGithub') btn = document.getElementById('btnTabGithub');
+            if (tabId === 'tabLocal') btn = document.getElementById('btnTabLocal');
+
+            if (btn) {
+                btn.classList.remove('bg-dark-950', 'text-slate-400', 'border', 'border-slate-800');
+                btn.classList.add('bg-brand-600', 'text-white', 'shadow-lg', 'shadow-brand-600/30');
+            }
+        }
+    </script>
+</body>
+</html>
