@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/umesh240/log-viewer"><img src="https://img.shields.io/badge/version-1.7.0-brightgreen.svg" alt="Version"></a>
+  <a href="https://github.com/umesh240/log-viewer"><img src="https://img.shields.io/badge/version-1.8.0-brightgreen.svg" alt="Version"></a>
   <a href="https://packagist.org/packages/raytech/raytech-log-viewer"><img src="https://img.shields.io/badge/packagist-raytech%2Fraytech--log--viewer-orange.svg" alt="Packagist"></a>
   <a href="https://php.net"><img src="https://img.shields.io/badge/php-%5E8.0-8892BF.svg" alt="PHP Version"></a>
   <a href="https://laravel.com"><img src="https://img.shields.io/badge/laravel-%5E8.0%20%7C%20%5E9.0%20%7C%20%5E10.0%20%7C%20%5E11.0%20%7C%20%5E12.0-FF2D20.svg" alt="Laravel"></a>
@@ -59,6 +59,12 @@
   - Unified single logo asset located at `public/img/default_logo.jpg` (no duplicate files).
   - Automatically rendered in the topbar brand header and embedded in the HTML `<head>` as the browser tab favicon icon (`rel="icon"`).
   - Fully customizable via config (`'brand_logo'`) or `.env` (`LOG_VIEWER_LOGO`).
+- 🔐 **Encrypted & Obfuscated Production Assets (`.min.js` & `.min.css`)**:
+  - Source code is maintained cleanly in separate development files (`public/js/raytech-log-viewer.js` and `public/css/raytech-log-viewer.css`).
+  - Blade templates exclusively serve encrypted/minified bundles (`raytech-log-viewer.min.js` and `raytech-log-viewer.min.css`).
+  - **Anti-Beautification & Anti-Reversing**: JavaScript undergoes multi-layer obfuscation (hex identifier mangling, string-array hex encryption with full character masking, runtime array rotation, and computed member calls). Even if formatted or "beautified" in DevTools, the original source code and variable names cannot be recovered.
+  - Built-in asset protection: Direct browser requests for raw `.css` or `.js` files are automatically intercepted and served the encrypted `.min` equivalents.
+  - Built-in compiler: Run `php artisan raytech-log-viewer:build` anytime to recompile and obfuscate assets with zero Node.js/npm dependencies!
 - 🎨 **Modular External CSS & JS Assets**:
   - Clean separation of concerns with dedicated stylesheets (`public/css/raytech-log-viewer.css`) and JavaScript logic (`public/js/raytech-log-viewer.js`).
   - Built-in automatic asset sync: Controller automatically updates published assets whenever package files are newer.
@@ -385,6 +391,9 @@ RaytechLogViewer::allowAll();
 |---|---|
 | `php artisan raytech-log-viewer:install` | Publishes config & assets (`public/vendor/raytech-log-viewer/`) |
 | `php artisan raytech-log-viewer:install --force` | Overwrites existing config and assets |
+| `php artisan raytech-log-viewer:build` | Compiles, minifies CSS, and strongly obfuscates JS into encrypted `.min` files |
+| `php artisan raytech-log-viewer:build --css` | Compiles and minifies CSS only |
+| `php artisan raytech-log-viewer:build --js` | Compiles, obfuscates, and encrypts JS only |
 | `php artisan raytech-log-viewer:update` | Re-publishes newest CSS, JS, and image assets |
 | `php artisan raytech-log-viewer:update --config` | Updates published `config/raytech-log-viewer.php` |
 | `php artisan raytech-log-viewer:hash <password>` | Generates a secure Bcrypt or SHA-256 hash for `LOG_VIEWER_PASSWORD` |
@@ -431,9 +440,11 @@ log_plugin/
 │   └── web.php                         # Route definitions
 ├── public/
 │   ├── css/
-│   │   └── raytech-log-viewer.css      # Modern stylesheet (Light & Dark mode)
+│   │   ├── raytech-log-viewer.css      # Clean development stylesheet
+│   │   └── raytech-log-viewer.min.css  # Minified & compressed production stylesheet
 │   ├── js/
-│   │   └── raytech-log-viewer.js       # Table accordion & live AJAX logic
+│   │   ├── raytech-log-viewer.js       # Clean development JavaScript source
+│   │   └── raytech-log-viewer.min.js   # Encrypted & obfuscated production bundle
 │   └── img/
 │       └── default_logo.jpg            # Canonical logo (header & favicon)
 ├── src/
@@ -442,19 +453,22 @@ log_plugin/
 │   ├── Facades/
 │   │   └── RaytechLogViewer.php        # Laravel Facade
 │   ├── Services/
+│   │   ├── AssetCompiler.php           # Pure PHP JS obfuscator & CSS minifier
 │   │   ├── LogFileManager.php          # File scanner & fast chunked tail reader
 │   │   └── LogParser.php               # Parser (levels, dates, messages, stack traces)
 │   ├── Http/
 │   │   └── Controllers/
-│   │       └── RaytechLogViewerController.php # Web controller & asset auto-sync
+│   │       └── RaytechLogViewerController.php # Web controller & protected asset stream
 │   └── Console/
+│       ├── BuildCommand.php            # raytech-log-viewer:build
 │       ├── InstallCommand.php          # raytech-log-viewer:install
 │       ├── UpdateCommand.php           # raytech-log-viewer:update
 │       ├── UninstallCommand.php        # raytech-log-viewer:uninstall
 │       └── ClearCommand.php            # raytech-log-viewer:clear
 └── resources/
     └── views/
-        └── index.blade.php             # Modern high-density Blade template
+        ├── index.blade.php             # Main log viewer template (loads .min assets)
+        └── auth.blade.php              # Password challenge template (loads .min assets)
 ```
 
 ---

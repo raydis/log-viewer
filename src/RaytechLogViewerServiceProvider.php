@@ -5,6 +5,7 @@ namespace Raytech\LogViewer;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Routing\Router;
+use Raytech\LogViewer\Console\BuildCommand;
 use Raytech\LogViewer\Console\ClearCommand;
 use Raytech\LogViewer\Console\HashCommand;
 use Raytech\LogViewer\Console\InstallCommand;
@@ -81,6 +82,7 @@ class RaytechLogViewerServiceProvider extends ServiceProvider
             ], 'raytech-log-viewer-assets');
 
             $this->commands([
+                BuildCommand::class,
                 InstallCommand::class,
                 UpdateCommand::class,
                 UninstallCommand::class,

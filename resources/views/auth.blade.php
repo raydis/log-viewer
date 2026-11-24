@@ -14,7 +14,7 @@
     @if(!empty($assets['fontawesome_css']))
         <link rel="stylesheet" href="{{ $assets['fontawesome_css'] }}">
     @endif
-    <link rel="stylesheet" href="{{ route($assetRoute, ['file' => 'css/raytech-log-viewer.css']) }}?v={{ $version }}">
+    <link rel="stylesheet" href="{{ route($assetRoute, ['file' => 'css/raytech-log-viewer.min.css']) }}?v={{ $version }}">
 
     <style>
         .auth-container {

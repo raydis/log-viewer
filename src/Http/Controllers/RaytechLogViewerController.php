@@ -908,6 +908,14 @@ class RaytechLogViewerController extends Controller
         }
 
         $file = ltrim(str_replace('\\', '/', $file), '/');
+
+        // Protect unminified core files: always serve encrypted minified production assets
+        if ($file === 'css/raytech-log-viewer.css') {
+            $file = 'css/raytech-log-viewer.min.css';
+        } elseif ($file === 'js/raytech-log-viewer.js') {
+            $file = 'js/raytech-log-viewer.min.js';
+        }
+
         $targetPath = null;
 
         // 3. Resolve package source asset root (3 levels up from Http/Controllers)

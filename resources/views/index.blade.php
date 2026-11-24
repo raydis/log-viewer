@@ -27,13 +27,13 @@
 
     @php
         $routeNamePrefix = config('raytech-log-viewer.route.name', 'log-viewer.');
-        $cssUrl = (function_exists('public_path') && file_exists(public_path('vendor/raytech-log-viewer/css/raytech-log-viewer.css')))
-            ? asset('vendor/raytech-log-viewer/css/raytech-log-viewer.css')
-            : route($routeNamePrefix . 'asset', ['file' => 'css/raytech-log-viewer.css']);
+        $cssUrl = (function_exists('public_path') && file_exists(public_path('vendor/raytech-log-viewer/css/raytech-log-viewer.min.css')))
+            ? asset('vendor/raytech-log-viewer/css/raytech-log-viewer.min.css')
+            : route($routeNamePrefix . 'asset', ['file' => 'css/raytech-log-viewer.min.css']);
 
-        $jsUrl = (function_exists('public_path') && file_exists(public_path('vendor/raytech-log-viewer/js/raytech-log-viewer.js')))
-            ? asset('vendor/raytech-log-viewer/js/raytech-log-viewer.js')
-            : route($routeNamePrefix . 'asset', ['file' => 'js/raytech-log-viewer.js']);
+        $jsUrl = (function_exists('public_path') && file_exists(public_path('vendor/raytech-log-viewer/js/raytech-log-viewer.min.js')))
+            ? asset('vendor/raytech-log-viewer/js/raytech-log-viewer.min.js')
+            : route($routeNamePrefix . 'asset', ['file' => 'js/raytech-log-viewer.min.js']);
     @endphp
 
     <!-- RayTech Log Viewer Stylesheet -->

@@ -5,20 +5,20 @@
     const config = window.RaytechLogViewer || {};
 
     // State variables
-    let activeKey = config.activeKey || '';
-    let activeName = config.activeName || '';
+    let activeKey = config['activeKey'] || '';
+    let activeName = config['activeName'] || '';
     let activeLevels = new Set(['all']);
-    let activeOrder = config.order || 'desc';
+    let activeOrder = config['order'] || 'desc';
     const savedOrder = sessionStorage.getItem('log_order');
     if (savedOrder && (savedOrder === 'desc' || savedOrder === 'asc')) {
         activeOrder = savedOrder;
     }
     let autoRefreshInterval = null;
-    let cachedEntries = Array.isArray(config.initialLines) ? config.initialLines : [];
+    let cachedEntries = Array.isArray(config['initialLines']) ? config['initialLines'] : [];
     let entriesMap = new Map();
 
     // Real-time error alerts & tab title flashing
-    let lastErrorCount = (config.stats && typeof config.stats.error === 'number') ? config.stats.error : null;
+    let lastErrorCount = (config['stats'] && typeof config['stats']['error'] === 'number') ? config['stats']['error'] : null;
     const originalDocumentTitle = document.title;
     let titleFlashTimer = null;
 
@@ -140,12 +140,12 @@
         }
     }
 
-    const indexUrl = config.indexUrl || '';
-    const clearUrl = config.clearUrl || '';
-    const defaultTheme = config.defaultTheme || 'light';
+    const indexUrl = config['indexUrl'] || '';
+    const clearUrl = config['clearUrl'] || '';
+    const defaultTheme = config['defaultTheme'] || 'light';
 
     // CSRF Token resolution
-    let csrfToken = config.csrfToken;
+    let csrfToken = config['csrfToken'];
     if (!csrfToken) {
         const csrfMeta = document.querySelector('meta[name="csrf-token"]');
         csrfToken = csrfMeta ? csrfMeta.getAttribute('content') : '';
@@ -1452,7 +1452,7 @@
             window.close();
         } catch (e) {}
         // Fallback: If browser blocks window.close(), redirect to home
-        window.location.href = config.homeUrl || '/';
+        window.location.href = config['homeUrl'] || '/';
     }
 
     if (syncChannel) {
@@ -1484,8 +1484,8 @@
         } catch (e) {}
 
         // Send backend logout
-        if (config.logoutUrl) {
-            fetch(config.logoutUrl, {
+        if (config['logoutUrl']) {
+            fetch(config['logoutUrl'], {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -1499,7 +1499,7 @@
     }
 
     // Emergency Hotkey Listener (Ctrl + Shift + D)
-    const destroyKey = (config.destroyShortcutKey || 'd').toLowerCase();
+    const destroyKey = (config['destroyShortcutKey'] || 'd').toLowerCase();
     document.addEventListener('keydown', function(e) {
         if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key && e.key.toLowerCase() === destroyKey) {
             e.preventDefault();
