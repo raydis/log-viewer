@@ -1,11 +1,11 @@
 # RayTech Log Viewer (`raytech/raytech-log-viewer`)
 
 <p align="center">
-  <img src="public/img/default_logo.jpg" alt="RayTech Log Viewer Logo" width="120" style="border-radius: 12px; margin-bottom: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+  <img src="public/img/default_logo.png" alt="RayTech Log Viewer Logo" width="120" style="border-radius: 12px; margin-bottom: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
 </p>
 
 <p align="center">
-  <strong>A high-performance, enterprise-grade, modern Laravel plugin for viewing all application and server logs with clean header rows, click-to-expand stack traces, newest-first sorting, live auto-refresh, encrypted production assets, and zero database setup.</strong>
+  <strong>A high-performance, enterprise-ready modern Laravel log viewer. Features clean header rows, click-to-expand stack traces, newest-first sorting, live auto-refresh, instant search, multi-severity filtering, and zero database setup.</strong>
 </p>
 
 <p align="center">
@@ -20,44 +20,195 @@
 
 ## 📑 Table of Contents
 
-- [Overview & UI Preview](#-overview--ui-preview)
-- [Key Features](#-key-features)
+- [Requirements](#-requirements)
 - [Quick Start](#-quick-start)
 - [Installation Guide](#-installation-guide)
-  - [Packagist (Standard)](#1-packagist-standard)
-  - [GitHub Repository (VCS)](#2-github-repository-vcs)
-  - [Local Development (Path Symlink)](#3-local-development-path-symlink)
-- [Configuration & Environment (`.env`)](#-configuration--environment-env)
+  - [Method 1: Packagist (Standard)](#method-1-packagist-standard)
+  - [Method 2: GitHub Repository (VCS)](#method-2-github-repository-vcs)
+  - [Method 3: Local Path / Monorepo](#method-3-local-path--monorepo)
+- [Publishing Configuration & Assets](#-publishing-configuration--assets)
+- [User Guide: How to Use the Log Viewer](#-user-guide-how-to-use-the-log-viewer)
+  - [Accessing the Interface](#1-accessing-the-interface)
+  - [Log Navigation & File Types](#2-log-navigation--file-types)
+  - [Calendar Date Picker for Daily Logs](#3-calendar-date-picker-for-daily-logs)
+  - [Header Summary & Click-to-Expand Details](#4-header-summary--click-to-expand-details)
+  - [Sorting: Newest First vs Oldest First](#5-sorting-newest-first-vs-oldest-first)
+  - [Instant 60 FPS Search](#6-instant-60-fps-search)
+  - [Multi-Level Severity Filtering](#7-multi-level-severity-filtering)
+  - [Live Auto-Refresh & Real-Time Alerts](#8-live-auto-refresh--real-time-alerts)
+  - [Exporting & Downloading Logs](#9-exporting--downloading-logs)
+  - [Clearing / Truncating Logs](#10-clearing--truncating-logs)
+  - [Dark & Light Themes](#11-dark--light-themes)
+- [Configuration & Environment Variables](#-configuration--environment-variables)
 - [Security & Access Control](#-security--access-control)
-  - [Middleware Protection](#option-a-middleware-protection)
-  - [Programmatic Auth Closure](#option-b-programmatic-auth-closure)
-  - [IP Address Whitelisting](#ip-address-whitelisting)
-  - [Password Protection & Brute-Force Lockout](#password-protection--brute-force-lockout)
-  - [Sensitive Data Masking / Redaction](#sensitive-data-masking--redaction)
-  - [Sensitive File Inclusion Blocker](#sensitive-file-inclusion-blocker)
-  - [Encrypted Shortcut Script Injection](#encrypted-shortcut-script-injection)
+  - [Option A: Route Middleware Protection](#option-a-route-middleware-protection)
+  - [Option B: Programmatic Gate Closure](#option-b-programmatic-gate-closure)
+  - [Option C: IP Address Whitelisting](#option-c-ip-address-whitelisting)
+  - [Option D: Standalone Password Protection & Lockout](#option-d-standalone-password-protection--lockout)
+  - [Emergency Panic Destroy Shortcut](#emergency-panic-destroy-shortcut)
+  - [Sensitive Data Masking (Redaction)](#sensitive-data-masking-redaction)
+  - [Sensitive File Protection](#sensitive-file-protection)
+- [Global Secret Hotkey (Open from Anywhere)](#-global-secret-hotkey-open-from-anywhere)
 - [Artisan Commands Reference](#-artisan-commands-reference)
-  - [Install & Update](#install--update)
-  - [Asset Compilation & Obfuscation (`build`)](#asset-compilation--obfuscation-build)
-  - [Log Cleaning & Age Purging (`clear`)](#log-cleaning--age-purging-clear)
-  - [Password Hashing (`hash`)](#password-hashing-hash)
-  - [Clean Uninstall](#clean-uninstall)
-- [Keyboard Shortcuts & UI Controls](#-keyboard-shortcuts--ui-controls)
-- [Project Architecture](#-project-architecture)
-- [Upgrading to Latest Release](#-upgrading-to-latest-release)
+- [Keyboard Shortcuts Cheat Sheet](#-keyboard-shortcuts-cheat-sheet)
+- [Upgrading](#-upgrading)
 - [FAQ & Troubleshooting](#-faq--troubleshooting)
-- [License & Credits](#-license--credits)
+- [License](#-license)
 
 ---
 
-## 🖥️ Overview & UI Preview
+## 📋 Requirements
+
+| Requirement | Supported Versions |
+|---|---|
+| **PHP** | `^8.0`, `^8.1`, `^8.2`, `^8.3`, `^8.4`, `^8.5` |
+| **Laravel Framework** | `^8.0`, `^9.0`, `^10.0`, `^11.0`, `^12.0` |
+| **Database** | **None** (zero tables, zero migrations, zero queries) |
+| **Asset Compilation** | **None** (all styles, scripts, and fonts are 100% pre-packaged and offline) |
+
+---
+
+## ⚡ Quick Start
+
+```bash
+# 1. Require package
+composer require raytech/raytech-log-viewer
+
+# 2. Publish config and assets
+php artisan raytech-log-viewer:install
+
+# 3. Open in your browser
+# https://your-domain.test/log-viewer
+```
+
+---
+
+## 📦 Installation Guide
+
+### Method 1: Packagist (Standard)
+
+Install via Composer in any standard Laravel application:
+
+```bash
+composer require raytech/raytech-log-viewer
+php artisan raytech-log-viewer:install
+```
+
+---
+
+### Method 2: GitHub Repository (VCS)
+
+If installing directly from a GitHub repository before a release tag is registered:
+
+1. Add the repository to your application's `composer.json`:
+   ```bash
+   composer config repositories.raytech-log-viewer vcs https://github.com/umesh240/log-viewer.git
+   ```
+
+2. Require the development or main branch:
+   ```bash
+   composer require raytech/raytech-log-viewer:dev-main
+   ```
+
+3. Publish configuration and assets:
+   ```bash
+   php artisan raytech-log-viewer:install
+   ```
+
+---
+
+### Method 3: Local Path / Monorepo
+
+If linking the package locally for private or local development:
+
+1. Add the path repository to your application's `composer.json`:
+   ```json
+   {
+       "repositories": [
+           {
+               "type": "path",
+               "url": "../path/to/log_plugin",
+               "options": {
+                   "symlink": true
+               }
+           }
+       ],
+       "require": {
+           "raytech/raytech-log-viewer": "*"
+       }
+   }
+   ```
+
+2. Run:
+   ```bash
+   composer update raytech/raytech-log-viewer
+   php artisan raytech-log-viewer:install
+   ```
+
+---
+
+## 🚀 Publishing Configuration & Assets
+
+Run the installation command to publish the package configuration and public assets:
+
+```bash
+php artisan raytech-log-viewer:install
+```
+
+To overwrite existing published files (e.g. after updating), use the `--force` flag:
+
+```bash
+php artisan raytech-log-viewer:install --force
+```
+
+This publishes:
+- `config/raytech-log-viewer.php` - Main configuration file.
+- `public/vendor/raytech-log-viewer/` - Minified CSS, JS, branding images, and local offline FontAwesome webfonts.
+
+---
+
+## 🖥️ User Guide: How to Use the Log Viewer
+
+### 1. Accessing the Interface
+
+Navigate to the log viewer URL in your browser:
+```
+https://your-laravel-domain.test/log-viewer
+```
+*(The URL path is configurable via `LOG_VIEWER_ROUTE_PREFIX` in `.env`)*.
+
+---
+
+### 2. Log Navigation & File Types
+
+The left sidebar categorizes all available logs:
+
+- **Laravel Application Logs**: All log files found in `storage/logs/` (e.g. `laravel.log`, `laravel-2026-11-24.log`, `worker.log`).
+- **Compressed Log Archives (`*.log.gz` / `*.gz`)**: Rotated compressed logs are automatically detected and badged with a purple `GZ` indicator. You can click and inspect them immediately without manually uncompressing them to disk.
+- **Server Logs** *(Optional)*: If enabled (`LOG_VIEWER_SHOW_SERVER_LOGS=true`), automatically discovers web server logs (Apache, Nginx, PHP error logs, WAMP/Laragon/XAMPP, MySQL/MariaDB error logs).
+- **Custom Files & Folders**: Any additional paths specified in your config or `.env` (`LOG_VIEWER_DIRS`, `LOG_VIEWER_FILES`).
+
+Click any log file in the sidebar to load its entries.
+
+---
+
+### 3. Calendar Date Picker for Daily Logs
+
+When viewing daily rotated logs (such as `laravel-YYYY-MM-DD.log`):
+- Click the compact **Calendar Picker** in the sidebar.
+- Select any date to instantly jump to the log file for that day.
+- Dates with existing logs are highlighted for fast selection.
+
+---
+
+### 4. Header Summary & Click-to-Expand Details
 
 ```
 ┌────────────────────────────────────────────────────────────────────────────────────────────────────────┐
 │ [>]  [ local.ERROR ]   2026-11-24 10:14:02   Call to undefined function str()           [7 frames]  📋 │
 ├────────────────────────────────────────────────────────────────────────────────────────────────────────┤
 │ ▼ Stack Exception: Call to undefined function str()                                                    │
-│   in storage/framework/views/lsp-ca4445c6fefa61f6.php on line 353                                     │
+│   in storage/framework/views/app-view.php on line 35                                                   │
 │ ┌──────────────────────┬──────────────────────┬──────────────────────────────────────────────────────┐ │
 │ │ [Stack Trace (7)]    │ [Context JSON]       │ [Raw Log]                                            │ │
 │ └──────────────────────┴──────────────────────┴──────────────────────────────────────────────────────┘ │
@@ -66,207 +217,142 @@
 └────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-RayTech Log Viewer turns complex, messy, multi-gigabyte Laravel and server log files into an organized, high-density, interactive control center. It offers full accordion inspection, syntax highlighting, live auto-refresh, smart error counting, and deep search capabilities—all operating **completely independent of your application database**.
+- **Single-Line Header Row**: Every log entry displays an environment & severity badge (e.g., `local.ERROR`, `production.CRITICAL`), a timestamp, and a clean message preview.
+- **Click to Expand**: Click anywhere on a row (or press <kbd>Enter</kbd> / <kbd>Space</kbd>) to expand the full accordion card:
+  - **Exception Location**: Highlights the exception class, message, and trigger file with line number.
+  - **Stack Trace Frames**: Formatted trace with distinct colors for file paths, line numbers, and function calls.
+  - **Context JSON Tab**: Color-coded JSON viewer for extra payload data passed with the log.
+  - **Raw Log Tab**: The original log line as written to disk.
+- **Expand All / Collapse All**: Use the toolbar buttons to open or close all visible rows at once.
 
 ---
 
-## 🌟 Key Features
+### 5. Sorting: Newest First vs Oldest First
 
-### 📊 Clean Table Summary & Accordion Details
-- **Single-Line Header Rows**: Each log record renders as a clean summary row displaying severity environment (`local.ERROR`, `production.CRITICAL`), precise timestamp, and a human-readable summary without raw JSON clutter.
-- **Click-to-Expand Details**: Clicking any row smoothly reveals the full diagnostic card:
-  - **Exception Card**: Red badge exception title, message, and exact `in <file> on line <line>` trigger location.
-  - **Stack Trace Frames**: Formatted stack trace with blue file paths, orange line numbers, and method calls.
-  - **Context JSON Tab**: Formatted, readable JSON context payload with key-value syntax styling.
-  - **Raw Log Tab**: Complete verbatim record with one-click copy button.
-
-### 🔝 Newest Logs on Top (Configurable Order)
-- Displays latest log entries at the very top of the table (`desc` order) by default so developers immediately see recent errors and events without scrolling to the bottom.
-- One-click toolbar toggle to switch anytime between **Newest First** and **Oldest First**. Persisted across the session.
-
-### ⚡ Zero Database Setup & Extreme Performance
-- **Zero Database Footprint**: Requires no database tables, migrations, models, or Redis queues. Operates directly on disk.
-- **64KB Reverse Chunk Buffer**: Tail reader processes multi-gigabyte log files in milliseconds without exhausting PHP memory (`memory_limit`).
-- **Gzip / Deflate HTTP Output Compression**: Compresses AJAX payloads by **85%–95%**, accelerating transfers on mobile and remote connections.
-- **On-Demand / Lazy DOM Hydration**: Detailed stack traces render on demand, keeping initial DOM elements minimal for instant time-to-first-render.
-- **60 FPS Search**: Debounced search synchronized with `window.requestAnimationFrame()` using native DOM `<mark>` nodes without `innerHTML` injection.
-
-### 🔍 Auto-Detection for Laravel & Server Logs
-- **Laravel Logs**: Discovers all files in `storage/logs/*.log`.
-- **Server Logs**: Automatically detects PHP error logs (`ini_get('error_log')`), Apache (`bin/apache/*/logs`, `httpd`), Nginx, WAMP, MariaDB, MySQL, and Linux system paths (`/var/log/*`).
-- **Custom Files & Directories**: Register additional paths via config or `.env` (`LOG_VIEWER_DIRS`, `LOG_VIEWER_FILES`).
-
-### 🗜️ Compressed Log Support (`*.log.gz` / `*.gz`)
-- Automatically discovers compressed log archives in both Laravel and server directories with distinctive purple `GZ` badges in the sidebar.
-- Bounded sliding-window streaming tail decompression allows instant browsing without extracting full archives to disk.
-
-### 📅 Calendar Date Picker Jump
-- Jump directly to any daily log file (e.g. `laravel-2026-11-24.log`) with a single click using the compact calendar picker in the sidebar.
-- Auto-selects the date of the active daily log and filters the sidebar in real time.
-
-### 🏷️ Multi-Level Log Severity Filtering
-- Detects `EMERGENCY`, `ALERT`, `CRITICAL`, `ERROR`, `WARNING`, `NOTICE`, `INFO`, `DEBUG`, and `TRACE`.
-- Select multiple severity tags simultaneously (e.g. view `ERROR` + `WARN` together while hiding `INFO`/`DEBUG`). Click "All" to reset.
-
-### 🔄 Live Auto-Refresh & State Persistence
-- Seamless AJAX polling (5s, 10s, 30s, or manual) with spinning sync icon and zero page flickering.
-- **Session Persistence**: Retains sort order, word wrap, active line limits (100, 500, 1000, 2500, 5000), auto-refresh intervals, and multi-level filters across refreshes within the active browser session.
-
-### 📤 Export Filtered Logs (JSON & CSV)
-- Export currently filtered or visible log records directly from the toolbar into clean `.json` or RFC 4180 `.csv` format (with UTF-8 BOM encoding for Microsoft Excel).
-
-### 🔔 Real-Time Error Alerts
-- Visual toast notification and browser tab title flashing (`🔴 (X) New Error!`) when new errors arrive during live auto-refresh.
-
-### ⌨️ Vim & Power-User Keyboard Navigation
-- Full keyboard navigation with <kbd>j</kbd>/<kbd>k</kbd> or arrow keys, <kbd>Enter</kbd> or <kbd>Space</kbd> to expand/collapse, <kbd>c</kbd> to copy, <kbd>/</kbd> to search, and <kbd>Esc</kbd> to clear.
-
-### 🔐 Multi-Layer Security & Hardening
-- **Password Protection**: Optional password challenge with secure Bcrypt/SHA-256 verification and session caching.
-- **Brute-Force Lockout**: Locks out visitors and redirects to home page after 3 failed attempts (backed by Laravel `RateLimiter`).
-- **Emergency Panic Hotkey (<kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>D</kbd>)**: Destroys the authenticated session and closes all open log viewer tabs across the browser instantly via `BroadcastChannel` and `localStorage`.
-- **Sensitive Data Masking**: Automatically redacts passwords, bearer tokens, API keys, database credentials, card numbers, and `APP_KEY` as `[REDACTED]`.
-- **Sensitive File Inclusion Blocker**: Strictly prevents inclusion or disclosure of `.env*`, `*.php`, `*.key`, `*.pem`, `*.crt`, `*.sql`, `*.sqlite`, `id_rsa*`.
-- **IP Address Whitelisting**: Restrict access to exact IPs, wildcards (`192.168.1.*`), or CIDR subnets (`10.0.0.0/8`).
-- **Encrypted Global Hotkey (<kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>X</kbd>)**: Opens `/log-viewer` in a new tab from any application page. Injected as heavily encrypted bytecode so the URL, trigger key, and logout endpoint are **100% hidden in HTML page source**.
-- **Production Asset Encryption**: Serves compiled, encrypted, anti-beautification `.min.js` and `.min.css` bundles with zero Node.js/npm build dependencies (`php artisan raytech-log-viewer:build`).
+- By default, the newest log entries appear at the very top (`desc` order) so you can immediately see the most recent errors without scrolling down.
+- Click **Newest First** / **Oldest First** in the top toolbar to switch sort directions anytime. Your choice is preserved across page refreshes.
 
 ---
 
-## ⚡ Quick Start
+### 6. Instant 60 FPS Search
 
-### 1. Require Package
-```bash
-composer require raytech/raytech-log-viewer
-```
-
-### 2. Publish Config & Assets
-```bash
-php artisan raytech-log-viewer:install
-```
-
-### 3. Open in Browser
-Navigate to:
-```
-https://your-app.local/log-viewer
-```
+- Press <kbd>/</kbd> or click the search bar in the toolbar.
+- Type any keyword, class name, error message, or timestamp.
+- Results filter in real-time with matched terms highlighted in yellow.
+- Press <kbd>Esc</kbd> to quickly clear the search filter.
 
 ---
 
-## 📦 Installation Guide
+### 7. Multi-Level Severity Filtering
 
-### 1. Packagist (Standard)
-```bash
-composer require raytech/raytech-log-viewer
-php artisan raytech-log-viewer:install
-```
-
----
-
-### 2. GitHub Repository (VCS)
-To install the latest code directly from GitHub without waiting for a Packagist tag:
-
-```bash
-# Add GitHub VCS repository to your composer config:
-composer config repositories.raytech-log-viewer vcs https://github.com/umesh240/log-viewer.git
-
-# Require latest code from main branch:
-composer require raytech/raytech-log-viewer:dev-main
-
-# Publish assets & configuration:
-php artisan raytech-log-viewer:install
-```
-
-Or manually add to your `composer.json`:
-```json
-{
-    "repositories": [
-        {
-            "type": "vcs",
-            "url": "https://github.com/umesh240/log-viewer.git"
-        }
-    ],
-    "require": {
-        "raytech/raytech-log-viewer": "dev-main"
-    }
-}
-```
+Filter visible records by severity level:
+- Click any severity pill in the toolbar: **Emergency**, **Alert**, **Critical**, **Error**, **Warning**, **Notice**, **Info**, **Debug**, or **Trace**.
+- **Multi-Select**: Click multiple levels to view them together (e.g., display both `ERROR` and `WARNING` while hiding `INFO`).
+- Click **All** to clear filters and show all severity levels.
 
 ---
 
-### 3. Local Development (Path Symlink)
-If you are developing the package locally:
+### 8. Live Auto-Refresh & Real-Time Alerts
 
-```json
-{
-    "repositories": [
-        {
-            "type": "path",
-            "url": "E:/wamp/www/log_plugin",
-            "options": {
-                "symlink": true
-            }
-        }
-    ],
-    "require": {
-        "raytech/raytech-log-viewer": "*"
-    }
-}
-```
-Run `composer update raytech/raytech-log-viewer && php artisan raytech-log-viewer:install`.
+- In the toolbar dropdown, choose your auto-refresh interval: **Manual**, **5 seconds**, **10 seconds**, or **30 seconds**.
+- The page updates in the background via smooth AJAX requests without flickering or page reloads.
+- **Real-Time Error Alert**: If new errors arrive while the tab is active or in the background, a toast alert notifies you and the browser tab flashes with a red alert badge (`🔴 (X) New Error!`).
 
 ---
 
-## ⚙️ Configuration & Environment (`.env`)
+### 9. Exporting & Downloading Logs
 
-The published configuration file is located at `config/raytech-log-viewer.php`. All core settings can be customized in `.env`:
+- **Export CSV**: Click **Export** &rarr; **CSV** to download visible/filtered log entries as an RFC 4180 compliant CSV file (with UTF-8 BOM encoding for seamless opening in Microsoft Excel).
+- **Export JSON**: Click **Export** &rarr; **JSON** to download records as structured, formatted JSON.
+- **Download Full Log**: Click **Download** in the toolbar to save the complete, original `.log` or `.gz` file to your computer.
+- **View Raw Text**: Click **Raw** to open the unformatted log text in a new browser tab.
+- **Copy to Clipboard**:
+  - Click the clipboard icon 📋 on any row (or press <kbd>c</kbd>) to copy that log entry.
+  - Click **Copy Log** in the toolbar to copy all currently visible records.
+
+---
+
+### 10. Clearing / Truncating Logs
+
+- Click **Clear Log** in the top toolbar.
+- A confirmation prompt will ask to confirm the truncation.
+- Upon confirmation, the active log file is truncated to 0 bytes without deleting the file itself.
+- *(Can be disabled by setting `LOG_VIEWER_ALLOW_CLEAR=false` in `.env`)*.
+
+---
+
+### 11. Dark & Light Themes
+
+- Click the **Sun / Moon** icon in the topbar to toggle between Dark Mode and Light Mode.
+- Your theme selection is saved in browser storage and remembered across sessions.
+
+---
+
+## ⚙️ Configuration & Environment Variables
+
+All settings can be configured via environment variables in your application's `.env` file or by editing `config/raytech-log-viewer.php`:
+
+### General & Routing
 
 | `.env` Variable | Default | Description |
 |---|---|---|
-| `LOG_VIEWER_ENABLED` | `true` | Enable or disable the log viewer route |
-| `LOG_VIEWER_ROUTE_PREFIX` | `log-viewer` | URL path prefix (e.g. `/log-viewer`, `/admin/logs`) |
+| `LOG_VIEWER_ENABLED` | `true` | Enable or disable the log viewer entirely |
+| `LOG_VIEWER_ROUTE_PREFIX` | `log-viewer` | URL path prefix (e.g. `/log-viewer` or `/admin/logs`) |
 | `LOG_VIEWER_MIDDLEWARE` | `web` | Middlewares protecting the route (e.g. `web,auth,admin`) |
-| `LOG_VIEWER_ORDER` | `desc` | Default sort order (`desc` = latest logs on top, `asc` = oldest first) |
-| `LOG_VIEWER_THEME` | `light` | Default theme (`light` or `dark`) |
-| `LOG_VIEWER_PRIMARY_COLOR` | `#1f6feb` | Primary accent color |
+| `LOG_VIEWER_DOMAIN` | `null` | Optional domain or subdomain restriction |
+
+### Appearance & Branding
+
+| `.env` Variable | Default | Description |
+|---|---|---|
+| `LOG_VIEWER_THEME` | `light` | Default theme mode (`light` or `dark`) |
+| `LOG_VIEWER_PRIMARY_COLOR` | `#1f6feb` | Primary accent color for buttons and badges |
 | `LOG_VIEWER_TITLE` | `RayTech Log Viewer` | Browser tab title and topbar heading |
-| `LOG_VIEWER_LOGO` | `vendor/raytech-log-viewer/img/default_logo.jpg` | Logo path (used for topbar header & browser favicon) |
-| `LOG_VIEWER_BACK_URL` | `/` | Destination URL for the "Back to Home" button |
-| `LOG_VIEWER_BACK_URL_NAME` | `Back To Home` | Label text for the back button |
-| `LOG_VIEWER_SHOW_BACK_BUTTON` | `true` | Show or hide the back button in the topbar |
-| `LOG_VIEWER_SHOW_SERVER_LOGS` | `false` | Enable or disable scanning server logs (Apache, Nginx, PHP error logs) |
-| `LOG_VIEWER_USE_CDN` | `false` | Use external CDNs (`true`) or 100% offline bundled local assets (`false`) |
-| `LOG_VIEWER_ALLOWED_IPS` | `null` | IP whitelist (`null` = open to all). Supports exact IPs, wildcards (`192.168.1.*`), and CIDR (`10.0.0.0/8`) |
-| `LOG_VIEWER_REDACTION_ENABLED` | `true` | Automatically sanitize sensitive passwords, tokens, API keys, and cards |
-| `LOG_VIEWER_PASSWORD_PROTECTED` | `false` | Enable or disable password challenge screen |
-| `LOG_VIEWER_PASSWORD` | `test26 hash` | Hashed password (generate via `php artisan raytech-log-viewer:hash <password>`) |
-| `LOG_VIEWER_MAX_ATTEMPTS` | `3` | Max failed password attempts before locking out |
-| `LOG_VIEWER_LOCKOUT_REDIRECT` | `/` | Redirect URL upon lockout (default: home page) |
-| `LOG_VIEWER_DESTROY_SHORTCUT_KEY` | `d` | Emergency hotkey key (<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>D</kbd>) to destroy session and close all open tabs |
-| `LOG_VIEWER_SHORTCUT_ENABLED` | `false` | Enable global hotkey (<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>X</kbd>) across your app |
-| `LOG_VIEWER_SHORTCUT_ENCRYPT` | `true` | Encrypt & obfuscate the injected hotkey script so secret keys and URLs are hidden in HTML source |
-| `LOG_VIEWER_SHORTCUT_KEY` | `x` | Character key for the global open shortcut |
-| `LOG_VIEWER_ALLOW_DOWNLOAD` | `true` | Allow downloading raw log files |
-| `LOG_VIEWER_ALLOW_CLEAR` | `true` | Allow clearing / truncating log files |
-| `LOG_VIEWER_ALLOW_DAYS_CLEANUP` | `false` | Guard allowing terminal cleanup of logs older than X days (`--days=30`) |
-| `LOG_VIEWER_ALLOW_RAW` | `true` | Allow opening unformatted raw text in a new tab |
+| `LOG_VIEWER_LOGO` | `vendor/raytech-log-viewer/img/default_logo.png` | Logo path (used for header and favicon) |
+| `LOG_VIEWER_SHOW_BACK_BUTTON` | `true` | Show or hide the "Back to App" button |
+| `LOG_VIEWER_BACK_URL` | `/` | Destination URL when clicking the back button |
+| `LOG_VIEWER_BACK_URL_NAME` | `Back To Home` | Label text on the back button |
+
+### Log Files & Discovery
+
+| `.env` Variable | Default | Description |
+|---|---|---|
+| `LOG_VIEWER_SHOW_SERVER_LOGS` | `false` | Show or hide server logs in the sidebar |
+| `LOG_VIEWER_SCAN_SERVER_LOGS` | `false` | Scan Apache, Nginx, PHP, WAMP, MySQL log directories |
 | `LOG_VIEWER_DIRS` | `null` | Comma-separated list of extra directories to scan |
-| `LOG_VIEWER_FILES` | `null` | Comma-separated list of extra log files to scan |
+| `LOG_VIEWER_FILES` | `null` | Comma-separated list of specific log files to include |
+
+### Features & Behavior
+
+| `.env` Variable | Default | Description |
+|---|---|---|
+| `LOG_VIEWER_ORDER` | `desc` | Default sort order (`desc` = newest logs on top, `asc` = oldest first) |
+| `LOG_VIEWER_ALLOW_DOWNLOAD` | `true` | Allow downloading raw log files |
+| `LOG_VIEWER_ALLOW_CLEAR` | `true` | Allow truncating log files |
+| `LOG_VIEWER_ALLOW_RAW` | `true` | Allow viewing unformatted raw logs in browser |
+| `LOG_VIEWER_ALLOW_DAYS_CLEANUP`| `false` | Guard allowing age-based log purging via artisan command |
+| `LOG_VIEWER_USE_CDN` | `false` | Use local offline assets (`false`) or external CDN (`true`) |
 
 ---
 
 ## 🔒 Security & Access Control
 
-### Option A: Middleware Protection
-Protect the route using standard Laravel middleware in `.env`:
+RayTech Log Viewer offers multiple layers of access control:
+
+### Option A: Route Middleware Protection
+
+Protect access using your existing Laravel authentication or role middleware by setting `LOG_VIEWER_MIDDLEWARE` in `.env`:
+
 ```env
+# Require authenticated user with an admin role
 LOG_VIEWER_MIDDLEWARE="web,auth,can:view-logs"
 ```
 
 ---
 
-### Option B: Programmatic Auth Closure
-Define access restrictions programmatically in `app/Providers/AppServiceProvider.php`:
+### Option B: Programmatic Gate Closure
+
+Define custom access rules in `app/Providers/AppServiceProvider.php` using the `RaytechLogViewer` facade:
 
 ```php
 use Raytech\LogViewer\Facades\RaytechLogViewer;
@@ -275,9 +361,11 @@ public function boot(): void
 {
     RaytechLogViewer::auth(function ($request) {
         $user = $request->user();
+        
+        // Return true to allow, false to deny access
         return $user && in_array($user->email, [
-            'admin@yourdomain.com',
-            'lead-dev@yourdomain.com',
+            'admin@yourcompany.com',
+            'developer@yourcompany.com',
         ]);
     });
 }
@@ -285,225 +373,201 @@ public function boot(): void
 
 ---
 
-### IP Address Whitelisting
-Restrict access to authorized office IPs, developer machines, or VPN subnets:
+### Option C: IP Address Whitelisting
+
+Restrict log viewer access to specific developer IP addresses, office networks, or VPN subnets in `.env`:
 
 ```env
+# Exact IPs, wildcards, and CIDR subnets are supported:
 LOG_VIEWER_ALLOWED_IPS="127.0.0.1, ::1, 192.168.1.*, 10.0.0.0/8"
 ```
-*When `LOG_VIEWER_ALLOWED_IPS` is `null` or empty, access is open to all (or governed by middleware).*
+
+*When `LOG_VIEWER_ALLOWED_IPS` is left empty or not set, access is permitted from any IP (subject to route middleware).*
 
 ---
 
-### Password Protection & Brute-Force Lockout
-Enable a standalone password protection screen independent of Laravel database authentication:
+### Option D: Standalone Password Protection & Lockout
 
-1. Generate a secure hash:
+Enable an independent password challenge screen that operates without database users:
+
+1. **Generate a secure hash**:
    ```bash
-   php artisan raytech-log-viewer:hash mySuperSecretPassword!
+   php artisan raytech-log-viewer:hash yourPasswordHere
    ```
-2. Add to `.env`:
+
+2. **Add to `.env`**:
    ```env
    LOG_VIEWER_PASSWORD_PROTECTED=true
-   LOG_VIEWER_PASSWORD="$2y$12$e8g..."
+   LOG_VIEWER_PASSWORD="$2y$12$..."
+   LOG_VIEWER_MAX_ATTEMPTS=3
+   LOG_VIEWER_LOCKOUT_REDIRECT="/"
    ```
-3. Rate limiting automatically locks out any visitor after 3 failed attempts and redirects them away.
+
+3. **Brute-Force Protection**: Visitors receive up to 3 attempts. After 3 incorrect passwords, they are automatically locked out and redirected to the configured destination URL.
 
 ---
 
-### Sensitive Data Masking / Redaction
-Sensitive values in log summaries, stack traces, and context JSON are automatically replaced with `[REDACTED]`:
-- Passwords (`password`, `password_confirmation`, `secret`)
-- Bearer tokens (`Bearer eyJ...`, `token`, `access_token`)
-- API keys (`api_key`, `client_secret`, `secret_key`)
-- Database credentials (`DB_PASSWORD`, `DATABASE_URL`)
-- Credit card numbers (13–16 digit PANs with separators)
-- Laravel application key (`APP_KEY`)
+### Emergency Panic Destroy Shortcut
 
-To customize redaction rules, edit `'redaction'` in `config/raytech-log-viewer.php`.
+If password protection is enabled, you can immediately lock and close all open log viewer tabs across the entire browser in an emergency:
+
+- Press <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>D</kbd> (or click **Lock Session** in the topbar).
+- The authenticated session is instantly destroyed and all open log viewer browser tabs automatically close.
 
 ---
 
-### Sensitive File Inclusion Blocker
-The scanner strictly blocks inclusion or inspection of sensitive system and credential files:
+### Sensitive Data Masking (Redaction)
+
+To prevent accidental leakage of sensitive credentials, the viewer automatically masks sensitive parameters in error messages, stack traces, and context JSON with `[REDACTED]`:
+- Passwords & confirmation tokens (`password`, `password_confirmation`, `secret`)
+- Authorization headers & Bearer tokens (`Bearer eyJ...`, `access_token`, `api_key`)
+- Database credentials & connection strings (`DB_PASSWORD`, `DATABASE_URL`)
+- Credit card numbers (13–16 digit PAN patterns)
+- Laravel encryption keys (`APP_KEY`)
+
+To customize redaction, configure `'redaction'` in `config/raytech-log-viewer.php`.
+
+---
+
+### Sensitive File Protection
+
+The log scanner strictly rejects and forbids any attempts to view sensitive configuration or key files:
 ```
 .env, .env.*, *.php, *.key, *.pem, *.crt, *.sql, *.sqlite, *.db, id_rsa, id_rsa.*
 ```
-Any custom path pointing to sensitive files will be rejected with `Access denied`.
+Any custom path pointing to these files will be blocked with an `Access Denied` error.
 
 ---
 
-### Encrypted Shortcut Script Injection
-When `LOG_VIEWER_SHORTCUT_ENABLED=true`, a secret hotkey listener (<kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>X</kbd>) is injected before `</body>`:
-- **Encrypted by default (`LOG_VIEWER_SHORTCUT_ENCRYPT=true`)**: The script is compiled and obfuscated as a dynamic hex ciphertext stream.
-- **Zero plain text**: Anyone inspecting "View Page Source" will **not** find `/log-viewer`, the trigger key, the emergency logout route, or your host domain.
+## ⚡ Global Secret Hotkey (Open from Anywhere)
+
+You can open the Log Viewer from **any page** in your application using a hidden global keyboard shortcut without exposing any visible links to regular users:
+
+1. Enable the shortcut in `.env`:
+   ```env
+   LOG_VIEWER_SHORTCUT_ENABLED=true
+   LOG_VIEWER_SHORTCUT_KEY="x"
+   LOG_VIEWER_SHORTCUT_CTRL=true
+   LOG_VIEWER_SHORTCUT_SHIFT=true
+   LOG_VIEWER_SHORTCUT_ALT=false
+   ```
+
+2. Press <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>X</kbd> on any page of your app to instantly open `/log-viewer` in a new tab.
+
+> 🔒 **Hidden in HTML Source**: When `LOG_VIEWER_SHORTCUT_ENCRYPT=true` (default), the injected shortcut script is obfuscated so the trigger key, target URL, and endpoints are hidden from browser "View Page Source".
 
 ---
 
 ## 💻 Artisan Commands Reference
 
-### Install & Update
+The package provides several command-line tools for maintenance and automation:
 
-| Command | Description |
-|---|---|
-| `php artisan raytech-log-viewer:install` | Publishes config & assets to `public/vendor/raytech-log-viewer/` |
-| `php artisan raytech-log-viewer:install --force` | Overwrites existing published config and assets |
-| `php artisan raytech-log-viewer:update` | Updates published CSS, JS, and image assets |
-| `php artisan raytech-log-viewer:update --config` | Updates published `config/raytech-log-viewer.php` with latest defaults |
-| `php artisan raytech-log-viewer:update --all` | Updates both assets and configuration simultaneously |
-
----
-
-### Asset Compilation & Obfuscation (`build`)
-RayTech Log Viewer includes a built-in pure PHP asset compiler. You can edit the clean source files (`public/js/raytech-log-viewer.js` and `public/css/raytech-log-viewer.css`) and recompile encrypted production bundles **with zero Node.js or npm dependencies**:
+### 1. Installation
 
 ```bash
-# Recompile both CSS (minified) and JS (encrypted & obfuscated):
-php artisan raytech-log-viewer:build
+# Publish configuration and assets
+php artisan raytech-log-viewer:install
 
-# Recompile CSS only:
-php artisan raytech-log-viewer:build --css
-
-# Recompile JS only:
-php artisan raytech-log-viewer:build --js
+# Overwrite existing configuration and assets
+php artisan raytech-log-viewer:install --force
 ```
 
 ---
 
-### Log Cleaning & Age Purging (`clear`)
+### 2. Updating Assets & Config
 
 ```bash
-# Truncate active laravel.log file:
+# Update published public assets (CSS, JS, images)
+php artisan raytech-log-viewer:update
+
+# Update published config/raytech-log-viewer.php with latest defaults
+php artisan raytech-log-viewer:update --config
+
+# Update both assets and configuration simultaneously
+php artisan raytech-log-viewer:update --all
+```
+
+---
+
+### 3. Log Cleaning & Age Purging
+
+```bash
+# Truncate the main laravel.log file
 php artisan raytech-log-viewer:clear
 
-# Truncate a specific log file:
+# Truncate a specific log file
 php artisan raytech-log-viewer:clear laravel-2026-11-24.log
 
-# Truncate ALL discovered log files:
+# Truncate ALL detected log files
 php artisan raytech-log-viewer:clear --all
 
-# Safely purge log files older than X days (guarded by LOG_VIEWER_ALLOW_DAYS_CLEANUP=true):
+# Purge daily rotated log files older than X days (e.g. 30 days)
 php artisan raytech-log-viewer:clear --days=30
 ```
 
-> 🛡️ **Safety Guard**: `php artisan raytech-log-viewer:clear --days=30` will refuse to run unless explicitly enabled in your configuration (`'allow_days_cleanup' => true` or `LOG_VIEWER_ALLOW_DAYS_CLEANUP=true`), preventing accidental data loss in production.
+> 🛡️ **Safety Guard**: The `--days` option requires `LOG_VIEWER_ALLOW_DAYS_CLEANUP=true` in your `.env` to prevent accidental deletion in production environments.
 
 ---
 
-### Password Hashing (`hash`)
+### 4. Password Hash Generator
 
-Generate secure password hashes for `LOG_VIEWER_PASSWORD` in `.env`:
+Generate secure hashes for `LOG_VIEWER_PASSWORD`:
 
 ```bash
-# Generate Bcrypt hash:
+# Generate Bcrypt hash (Default)
 php artisan raytech-log-viewer:hash myPassword123
 
-# Generate SHA-256 hash:
+# Generate SHA-256 hash
 php artisan raytech-log-viewer:hash myPassword123 --algo=sha256
+
+# Generate Laravel encrypted string
+php artisan raytech-log-viewer:hash myPassword123 --algo=encrypt
 ```
 
 ---
 
-### Clean Uninstall
+### 5. Uninstalling
+
+Cleanly remove published assets and configuration:
 
 ```bash
-# Cleanly removes all published assets, views, and configuration:
+# Remove published assets and config file
 php artisan raytech-log-viewer:uninstall
 
-# Removes published assets while keeping your customized config file:
+# Remove published assets but keep your customized config/raytech-log-viewer.php
 php artisan raytech-log-viewer:uninstall --keep-config
 ```
 
 ---
 
-## ⌨️ Keyboard Shortcuts & UI Controls
+## ⌨️ Keyboard Shortcuts Cheat Sheet
 
-### Global & Security
 | Shortcut | Action |
 |---|---|
-| <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>X</kbd> *(or <kbd>Cmd</kbd> on Mac)* | **Global Secret Hotkey**: Opens Log Viewer in a new tab from any application page |
-| <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>D</kbd> | **Emergency Panic Destroy**: Immediately destroys authenticated session and closes all open log viewer tabs across the browser |
-| Click `Lock Session` (Toolbar) | Destroys current session and returns to password screen |
-
-### Navigation & Inspection
-| Shortcut / Control | Action |
-|---|---|
-| Click row / <kbd>Enter</kbd> / <kbd>Space</kbd> | Toggle expand/collapse detailed stack trace card |
-| <kbd>j</kbd> / <kbd>k</kbd> or <kbd>↓</kbd> / <kbd>↑</kbd> | Navigate to next / previous log entry |
-| <kbd>c</kbd> | Copy selected log record body to clipboard |
-| <kbd>/</kbd> or <kbd>Ctrl</kbd> + <kbd>F</kbd> | Focus client-side search input |
-| <kbd>Esc</kbd> | Clear search input or deselect active log entry |
-| <kbd>Ctrl</kbd> + <kbd>B</kbd> | Collapse / Expand sidebar |
-| Click Moon / Sun (Topbar) | Toggle Dark / Light theme |
-| Click `Newest First` / `Oldest First` | Toggle chronological sort order |
-| Click `Expand All` / `Collapse All` | Bulk expand or collapse all visible rows |
-| Click `Copy Log` | Copy visible filtered logs or individual record to clipboard |
+| <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>X</kbd> | **Global Secret Hotkey**: Opens Log Viewer in a new browser tab from any application page |
+| <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>D</kbd> | **Emergency Panic Destroy**: Destroys active session and closes all log viewer tabs immediately |
+| <kbd>j</kbd> or <kbd>↓</kbd> | Select next log entry |
+| <kbd>k</kbd> or <kbd>↑</kbd> | Select previous log entry |
+| Click row / <kbd>Enter</kbd> / <kbd>Space</kbd> | Expand or collapse detailed stack trace accordion |
+| <kbd>c</kbd> | Copy selected log message to clipboard |
+| <kbd>/</kbd> or <kbd>Ctrl</kbd> + <kbd>F</kbd> | Focus the real-time search input bar |
+| <kbd>Esc</kbd> | Clear search input or deselect active log record |
+| <kbd>Ctrl</kbd> + <kbd>B</kbd> | Expand or collapse the sidebar |
 
 ---
 
-## 📂 Project Architecture
+## 🔄 Upgrading
 
-```
-log_plugin/
-├── composer.json                       # Package manifest, dependencies, auto-discovery
-├── README.md                           # Complete documentation & guide
-├── LICENSE                             # MIT License
-├── config/
-│   └── raytech-log-viewer.php          # Comprehensive publishable configuration
-├── routes/
-│   └── web.php                         # Route definitions (viewer, API, assets, auth, clear)
-├── public/
-│   ├── css/
-│   │   ├── raytech-log-viewer.css      # Clean, readable CSS source (development)
-│   │   └── raytech-log-viewer.min.css  # Safe minified production stylesheet
-│   ├── js/
-│   │   ├── raytech-log-viewer.js       # Clean, readable JS source (development)
-│   │   └── raytech-log-viewer.min.js   # Encrypted, obfuscated production bundle
-│   ├── img/
-│   │   └── default_logo.jpg            # Canonical logo asset (topbar header & tab favicon)
-│   └── vendor/
-│       └── fontawesome-free/           # Bundled offline icons (zero CDN dependency)
-├── src/
-│   ├── RaytechLogViewerServiceProvider.php # Auto-discovery, Blade directives & bindings
-│   ├── RaytechLogViewer.php            # Core runtime manager & auth gates
-│   ├── Facades/
-│   │   └── RaytechLogViewer.php        # Laravel Facade accessor
-│   ├── Services/
-│   │   ├── AssetCompiler.php           # Pure PHP JS obfuscator & CSS minifier
-│   │   ├── LogFileManager.php          # File scanner & fast chunked tail reader
-│   │   └── LogParser.php               # Parser (levels, dates, messages, stack traces)
-│   ├── Http/
-│   │   ├── Controllers/
-│   │   │   └── RaytechLogViewerController.php # Web controller & protected asset stream
-│   │   └── Middleware/
-│   │       └── InjectLogViewerShortcutMiddleware.php # Auto-injects encrypted global shortcut
-│   └── Console/
-│       ├── InstallCommand.php          # raytech-log-viewer:install
-│       ├── UpdateCommand.php           # raytech-log-viewer:update
-│       ├── BuildCommand.php            # raytech-log-viewer:build
-│       ├── ClearCommand.php            # raytech-log-viewer:clear
-│       ├── HashPasswordCommand.php     # raytech-log-viewer:hash
-│       └── UninstallCommand.php        # raytech-log-viewer:uninstall
-└── resources/
-    └── views/
-        ├── index.blade.php             # Main high-density Log Viewer UI (loads .min assets)
-        └── auth.blade.php              # Password challenge view (loads .min assets)
-```
-
----
-
-## 🔄 Upgrading to Latest Release
-
-When updating the package:
+When upgrading the package to a new version:
 
 ```bash
-# 1. Update composer package
+# 1. Update package via Composer
 composer update raytech/raytech-log-viewer
 
-# 2. Re-publish latest encrypted assets (CSS, JS, logo)
+# 2. Update published assets (CSS, JS, fonts, images)
 php artisan raytech-log-viewer:update
 
-# 3. (Optional) Re-publish latest config keys
+# 3. (Optional) Check config for newly added keys
 php artisan raytech-log-viewer:update --config
 ```
 
@@ -511,37 +575,27 @@ php artisan raytech-log-viewer:update --config
 
 ## ❓ FAQ & Troubleshooting
 
-#### Q: How can I change the secret hotkey from <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>X</kbd> to something else?
-A: In your `.env`, set:
-```env
-LOG_VIEWER_SHORTCUT_KEY="l"
-LOG_VIEWER_SHORTCUT_CTRL=true
-LOG_VIEWER_SHORTCUT_SHIFT=true
-LOG_VIEWER_SHORTCUT_ALT=false
-```
-Now pressing <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>L</kbd> will open the viewer.
+#### Q: I get a 403 Forbidden error when opening `/log-viewer`.
+- If you configured `LOG_VIEWER_ALLOWED_IPS`, ensure your client IP is in the allowed whitelist.
+- If using `LOG_VIEWER_MIDDLEWARE="web,auth"`, ensure you are logged into your application first.
+- If using programmatic gate closure `RaytechLogViewer::auth(...)`, ensure the closure returns `true` for your user.
 
-#### Q: Will anyone see my secret hotkey in "View Source"?
-A: **No.** When `LOG_VIEWER_SHORTCUT_ENCRYPT=true` (enabled by default), the injected script is completely encrypted as bytecode. There are no plain text URLs, keys, or endpoints in the rendered HTML.
+#### Q: Will this package slow down my application or consume high memory on large log files?
+- **No.** The tail reader reads files in reverse 64KB binary chunks and stops reading once the requested number of lines (e.g. 500 lines) is reached. It never loads the entire log file into PHP memory.
 
-#### Q: I modified `raytech-log-viewer.js` or `raytech-log-viewer.css`. How do I update production?
-A: Run:
-```bash
-php artisan raytech-log-viewer:build
-php artisan raytech-log-viewer:update
-```
-Your changes in the clean `.js` or `.css` files will be compiled into encrypted `.min.js` and minified `.min.css` bundles and deployed to your public vendor directory.
+#### Q: Can I run this in offline, intranet, or air-gapped environments?
+- **Yes.** By default (`LOG_VIEWER_USE_CDN=false`), all FontAwesome icons, fonts, CSS styles, and scripts are bundled locally inside the package. No external network requests are made.
 
-#### Q: Does this package slow down my application?
-A: **No.** The tail reader reads files in reverse 64KB binary chunks and stops as soon as the line limit is satisfied. It never loads entire log files into PHP memory.
+#### Q: How do I change the default brand logo or title?
+- Set `LOG_VIEWER_TITLE="My Company Logs"` and `LOG_VIEWER_LOGO="images/my-logo.png"` in your `.env` file or `config/raytech-log-viewer.php`.
 
-#### Q: Can I run this in air-gapped or offline enterprise environments?
-A: **Yes 100%.** All FontAwesome icons, fonts, styles, and scripts are bundled locally inside the package. No external CDN calls are made when `LOG_VIEWER_USE_CDN=false`.
+#### Q: Can I view server logs like Apache, Nginx, or PHP error logs?
+- **Yes.** Set `LOG_VIEWER_SHOW_SERVER_LOGS=true` and `LOG_VIEWER_SCAN_SERVER_LOGS=true` in your `.env`. The viewer will automatically scan common server log directories and `ini_get('error_log')`.
 
 ---
 
-## 📄 License & Credits
+## 📄 License
 
-**RayTech Log Viewer** is open-source software licensed under the [MIT license](LICENSE).
+RayTech Log Viewer is open-source software licensed under the **[MIT License](LICENSE)**.
 
 Copyright &copy; 2026 **RayTech**. All rights reserved.

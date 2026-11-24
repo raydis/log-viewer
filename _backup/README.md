@@ -1,7 +1,7 @@
 # RayTech Log Viewer (`raytech/raytech-log-viewer`)
 
 <p align="center">
-  <img src="public/img/default_logo.jpg" alt="RayTech Log Viewer Logo" width="120" style="border-radius: 12px; margin-bottom: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+  <img src="public/img/default_logo.png" alt="RayTech Log Viewer Logo" width="120" style="border-radius: 12px; margin-bottom: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
 </p>
 
 <p align="center">
@@ -230,7 +230,7 @@ The published configuration file is located at `config/raytech-log-viewer.php`. 
 | `LOG_VIEWER_THEME` | `light` | Default theme (`light` or `dark`) |
 | `LOG_VIEWER_PRIMARY_COLOR` | `#1f6feb` | Primary accent color |
 | `LOG_VIEWER_TITLE` | `RayTech Log Viewer` | Browser tab title and topbar heading |
-| `LOG_VIEWER_LOGO` | `vendor/raytech-log-viewer/img/default_logo.jpg` | Logo path (used for topbar header & browser favicon) |
+| `LOG_VIEWER_LOGO` | `vendor/raytech-log-viewer/img/default_logo.png` | Logo path (used for topbar header & browser favicon) |
 | `LOG_VIEWER_BACK_URL` | `/` | Destination URL for the "Back to Home" button |
 | `LOG_VIEWER_BACK_URL_NAME` | `Back To Home` | Label text for the back button |
 | `LOG_VIEWER_SHOW_BACK_BUTTON` | `true` | Show or hide the back button in the topbar |
@@ -460,7 +460,7 @@ log_plugin/
 │   │   ├── raytech-log-viewer.js       # Clean, readable JS source (development)
 │   │   └── raytech-log-viewer.min.js   # Encrypted, obfuscated production bundle
 │   ├── img/
-│   │   └── default_logo.jpg            # Canonical logo asset (topbar header & tab favicon)
+│   │   └── default_logo.png            # Canonical logo asset (topbar header & tab favicon)
 │   └── vendor/
 │       └── fontawesome-free/           # Bundled offline icons (zero CDN dependency)
 ├── src/

@@ -43,7 +43,7 @@ return [
      * | - primary_color: Primary brand color used for active accents, buttons, and badges
      * | - title: HTML page title
      * | - brand_name: Header branding text displayed in topbar
-     * | - brand_logo: Path or URL to brand logo / browser title icon (default: 'vendor/log-viewer/img/default_logo.jpg')
+     * | - brand_logo: Path or URL to brand logo / browser title icon (default: 'vendor/log-viewer/img/default_logo.png')
      * | - back_url: Target URL when clicking the back button
      * | - back_url_name: Text label displayed on the back button
      * | - show_back_button: Whether to show the back button in topbar
@@ -54,7 +54,7 @@ return [
         'primary_color' => env('LOG_VIEWER_PRIMARY_COLOR', '#1f6feb'),
         'title' => env('LOG_VIEWER_TITLE', 'Log Viewer'),
         'brand_name' => env('APP_NAME', 'RayTech'),
-        'brand_logo' => env('LOG_VIEWER_LOGO', 'vendor/raytech-log-viewer/img/default_logo.jpg'),
+        'brand_logo' => env('LOG_VIEWER_LOGO', 'vendor/raytech-log-viewer/img/default_logo.png'),
         'back_url' => env('LOG_VIEWER_BACK_URL', '/'),
         'back_url_name' => env('LOG_VIEWER_BACK_URL_NAME', 'Back To Home'),
         'show_back_button' => env('LOG_VIEWER_SHOW_BACK_BUTTON', true),
@@ -188,7 +188,7 @@ return [
      */
     'security' => [
         'enabled' => env('LOG_VIEWER_PASSWORD_PROTECTED', false),
-        'password' => env('LOG_VIEWER_PASSWORD', '$2y$10$ZfUboNTMgBUhU5kVfoWyTu8X4B4WMr7trhWrjZGnpm4u9PLiDfv2W'), // Default hash of 'test26'
+        'password' => env('LOG_VIEWER_PASSWORD', '$2y$10$ZfUboNTMgBUhU5kVfoWyTu8X4B4WMr7trhWrjZGnpm4u9PLiDfv2W'),  // Default hash of 'test26'
         // IP Whitelist: null, empty string, or [] allows access to all.
         // Set specific IPs, wildcards ('192.168.1.*'), or CIDR ('10.0.0.0/8') to restrict.
         'allowed_ips' => env('LOG_VIEWER_ALLOWED_IPS', null),

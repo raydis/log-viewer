@@ -4,9 +4,9 @@ namespace Raytech\LogViewer\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
-use Raytech\LogViewer\RaytechLogViewer;
 use Raytech\LogViewer\Services\LogFileManager;
 use Raytech\LogViewer\Services\LogParser;
+use Raytech\LogViewer\RaytechLogViewer;
 use Symfony\Component\HttpFoundation\Response as SymfonyResponse;
 
 class RaytechLogViewerController extends Controller
@@ -566,14 +566,16 @@ class RaytechLogViewerController extends Controller
             if (\Illuminate\Support\Facades\Hash::check($inputPassword, $configuredPassword)) {
                 return true;
             }
-        } catch (\Throwable $e) {}
+        } catch (\Throwable $e) {
+        }
 
         // 2. Direct password_verify fallback for standard PHP Bcrypt/Argon2 hashes
         try {
             if (function_exists('password_verify') && password_verify($inputPassword, $configuredPassword)) {
                 return true;
             }
-        } catch (\Throwable $e) {}
+        } catch (\Throwable $e) {
+        }
 
         // 3. Optional fallback for SHA-256 or SHA-512 hex hashes
         $len = strlen($configuredPassword);
@@ -753,7 +755,7 @@ class RaytechLogViewerController extends Controller
 
         // If no logo specified or empty
         if (empty($rawLogo)) {
-            $rawLogo = 'img/default_logo.jpg';
+            $rawLogo = 'img/default_logo.png';
         }
 
         // If fully-qualified URL or data URI
@@ -772,14 +774,14 @@ class RaytechLogViewerController extends Controller
             if (file_exists(public_path('vendor/raytech-log-viewer/' . $trimmed))) {
                 return asset('vendor/raytech-log-viewer/' . $trimmed);
             }
-            if ($trimmed === 'default_logo.jpg' && file_exists(public_path('vendor/raytech-log-viewer/img/default_logo.jpg'))) {
-                return asset('vendor/raytech-log-viewer/img/default_logo.jpg');
+            if ($trimmed === 'default_logo.png' && file_exists(public_path('vendor/raytech-log-viewer/img/default_logo.png'))) {
+                return asset('vendor/raytech-log-viewer/img/default_logo.png');
             }
         }
 
-        // Standardize default_logo.jpg to img/default_logo.jpg
-        if ($trimmed === 'default_logo.jpg') {
-            $trimmed = 'img/default_logo.jpg';
+        // Standardize default_logo.png to img/default_logo.png
+        if ($trimmed === 'default_logo.png') {
+            $trimmed = 'img/default_logo.png';
         }
 
         // Serve via package asset route
@@ -882,20 +884,20 @@ class RaytechLogViewerController extends Controller
         // 1. Strict extension whitelist & MIME resolution
         $extension = strtolower(pathinfo($file, PATHINFO_EXTENSION));
         $contentTypes = [
-            'css'   => 'text/css; charset=utf-8',
-            'js'    => 'application/javascript; charset=utf-8',
-            'map'   => 'application/json; charset=utf-8',
-            'jpg'   => 'image/jpeg',
-            'jpeg'  => 'image/jpeg',
-            'png'   => 'image/png',
-            'gif'   => 'image/gif',
-            'svg'   => 'image/svg+xml',
-            'ico'   => 'image/x-icon',
-            'woff'  => 'font/woff',
+            'css' => 'text/css; charset=utf-8',
+            'js' => 'application/javascript; charset=utf-8',
+            'map' => 'application/json; charset=utf-8',
+            'jpg' => 'image/jpeg',
+            'jpeg' => 'image/jpeg',
+            'png' => 'image/png',
+            'gif' => 'image/gif',
+            'svg' => 'image/svg+xml',
+            'ico' => 'image/x-icon',
+            'woff' => 'font/woff',
             'woff2' => 'font/woff2',
-            'ttf'   => 'font/ttf',
-            'eot'   => 'application/vnd.ms-fontobject',
-            'otf'   => 'font/otf',
+            'ttf' => 'font/ttf',
+            'eot' => 'application/vnd.ms-fontobject',
+            'otf' => 'font/otf',
         ];
 
         if (!isset($contentTypes[$extension])) {
@@ -925,8 +927,8 @@ class RaytechLogViewerController extends Controller
             ? $candidate
             : null;
 
-        if (!$packageAsset && ($file === 'default_logo.jpg' || $file === 'img/default_logo.jpg')) {
-            $logoCandidate = $packagePublic ? realpath($packagePublic . '/img/default_logo.jpg') : null;
+        if (!$packageAsset && ($file === 'default_logo.png' || $file === 'img/default_logo.png')) {
+            $logoCandidate = $packagePublic ? realpath($packagePublic . '/img/default_logo.png') : null;
             if ($logoCandidate && is_file($logoCandidate)) {
                 $packageAsset = $logoCandidate;
             }
@@ -984,7 +986,8 @@ class RaytechLogViewerController extends Controller
             if (@is_readable($targetPath)) {
                 return response()->file($targetPath, $headers);
             }
-        } catch (\Throwable $e) {}
+        } catch (\Throwable $e) {
+        }
 
         return response(file_get_contents($targetPath), 200, $headers);
     }
