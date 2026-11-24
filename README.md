@@ -81,7 +81,7 @@
 - ⌨️ **Global Secret Hotkey (<kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>X</kbd>)**:
   - Keep `/log-viewer` hidden with zero visible links on your navigation bar.
   - Press <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>X</kbd> (or <kbd>Cmd</kbd> + <kbd>Shift</kbd> + <kbd>X</kbd> on Mac) from any page in your application to open the viewer in a new tab!
-  - Automatically injected via middleware or usable with the `@logViewerShortcut` Blade directive.
+  - **Encrypted & Hidden in Page Source**: Automatically injected via middleware or `@logViewerShortcut` as a heavily encrypted bytecode bundle. Anyone inspecting the HTML page source cannot find the `/log-viewer` URL, the trigger key, or the emergency close mechanism (`LOG_VIEWER_SHORTCUT_ENCRYPT=true`).
 - 🛡️ **Sensitive File Inclusion Blocker**:
   - Strictly prevents inclusion or disclosure of sensitive files (`.env*`, `*.php`, `*.key`, `*.pem`, `*.crt`, `*.sql`, `*.sqlite`, `id_rsa*`) in custom log configurations.
   - Complete protection against arbitrary file read or path inclusion vulnerabilities across custom file registration, reading, clearing, downloading, and raw viewing.
@@ -345,6 +345,7 @@ The published configuration file is located at `config/raytech-log-viewer.php`. 
 | `LOG_VIEWER_LOCKOUT_REDIRECT`| `/`     | Redirect URL on lockout (default: home page) |
 | `LOG_VIEWER_DESTROY_SHORTCUT_KEY` | `d` | Emergency hotkey key (<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>D</kbd>) to destroy session and close all open log tabs |
 | `LOG_VIEWER_SHORTCUT_ENABLED`| `false` | Enable global hotkey (<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>X</kbd>) across your app |
+| `LOG_VIEWER_SHORTCUT_ENCRYPT`| `true`  | Encrypt & obfuscate the injected hotkey script so secret keys and URLs are hidden in HTML source |
 | `LOG_VIEWER_SHORTCUT_KEY`    | `x`     | Character key for global hotkey |
 | `LOG_VIEWER_ALLOW_DOWNLOAD` | `true` | Allow downloading raw log files |
 | `LOG_VIEWER_ALLOW_CLEAR` | `true` | Allow clearing / truncating log files |

@@ -142,11 +142,13 @@ return [
      * | - shift: Require Shift key (default: true)
      * | - alt: Require Alt key (default: false)
      * | - new_tab: Open viewer in a new browser tab ('_blank') (default: true)
+     * | - encrypt: Encrypt and obfuscate the injected shortcut script so secret hotkeys and URLs are hidden in HTML source (default: true)
      * |
      */
     'shortcut' => [
         'enabled' => env('LOG_VIEWER_SHORTCUT_ENABLED', false),
         'auto_inject' => env('LOG_VIEWER_SHORTCUT_AUTO_INJECT', true),
+        'encrypt' => env('LOG_VIEWER_SHORTCUT_ENCRYPT', true),
         'key' => env('LOG_VIEWER_SHORTCUT_KEY', 'x'),
         'ctrl' => env('LOG_VIEWER_SHORTCUT_CTRL', true),
         'shift' => env('LOG_VIEWER_SHORTCUT_SHIFT', true),
