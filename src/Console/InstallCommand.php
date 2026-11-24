@@ -34,14 +34,14 @@ class InstallCommand extends Command
             $params['--force'] = true;
         }
 
-        $this->call('vendor:publish', $params);
+        $this->callSilent('vendor:publish', $params);
 
         $assetParams = ['--tag' => 'raytech-log-viewer-assets'];
         if ($this->option('force')) {
             $assetParams['--force'] = true;
         }
 
-        $this->call('vendor:publish', $assetParams);
+        $this->callSilent('vendor:publish', $assetParams);
 
         $prefix = config('raytech-log-viewer.route.prefix', 'log-viewer');
         $url = url($prefix);

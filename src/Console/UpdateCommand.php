@@ -35,7 +35,7 @@ class UpdateCommand extends Command
         $this->info("🚀 Updating RayTech Log Viewer to v{$version}...");
 
         // 1. Update Assets
-        $this->call('vendor:publish', [
+        $this->callSilent('vendor:publish', [
             '--tag' => 'raytech-log-viewer-assets',
             '--force' => true,
         ]);
@@ -43,7 +43,7 @@ class UpdateCommand extends Command
 
         // 2. Update Configuration if requested
         if ($this->option('config') || $this->option('all')) {
-            $this->call('vendor:publish', [
+            $this->callSilent('vendor:publish', [
                 '--tag' => 'raytech-log-viewer-config',
                 '--force' => true,
             ]);

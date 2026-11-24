@@ -630,15 +630,21 @@ php artisan raytech-log-viewer:hash myPassword123 --algo=encrypt
 
 ### 5. Uninstalling
 
-Cleanly remove published assets and configuration:
+To cleanly and completely remove RayTech Log Viewer from your Laravel application:
 
 ```bash
-# Remove published assets and config file
+# Step 1: Remove all published assets, views, and configuration files
 php artisan raytech-log-viewer:uninstall
 
-# Remove published assets but keep your customized config/raytech-log-viewer.php
-php artisan raytech-log-viewer:uninstall --keep-config
+# (Optional) If you want to retain your customized config file:
+# php artisan raytech-log-viewer:uninstall --keep-config
+
+# Step 2: Completely remove the package dependency from Composer
+composer remove raytech/raytech-log-viewer
 ```
+
+> [!NOTE]
+> The uninstaller safely removes only published package files and flushes caches. It never touches or deletes anything inside your `.env` file. Running `composer remove` completely deletes all package source code and routes from the host application.
 
 ---
 

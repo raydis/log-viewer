@@ -20,6 +20,11 @@ class InjectLogViewerShortcutMiddleware
     {
         $response = $next($request);
 
+        // 0. Check if log viewer plugin is globally enabled
+        if (!config('raytech-log-viewer.enabled', true)) {
+            return $response;
+        }
+
         // 1. Check if shortcut feature is enabled in config
         if (!config('raytech-log-viewer.shortcut.enabled', false)) {
             return $response;
