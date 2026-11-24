@@ -97,13 +97,13 @@
         <div class="topbar-right">
             <!-- Auto Refresh -->
             <label style="font-size: 11.5px; color: var(--text-muted); display: flex; align-items: center; gap: 4px; margin: 0; cursor: pointer;">
-                <i class="fa fa-sync-alt fa-xs" id="refreshSpinIcon"></i> Auto:
+                @php $currentAuto = $autoInterval ?? ($features['auto_refresh_default'] ?? 10000); @endphp
+                <i class="fa fa-sync-alt fa-xs {{ $currentAuto > 0 ? 'fa-spin' : '' }}" id="refreshSpinIcon"></i> Auto:
                 <select id="selAutoRefresh" class="select-compact" style="height: 24px; padding: 1px 4px;">
-                    @php $autoInterval = $features['auto_refresh_default'] ?? 10000; @endphp
-                    <option value="0" {{ $autoInterval == 0 ? 'selected' : '' }}>Off</option>
-                    <option value="5000" {{ $autoInterval == 5000 ? 'selected' : '' }}>5s</option>
-                    <option value="10000" {{ $autoInterval == 10000 ? 'selected' : '' }}>10s</option>
-                    <option value="30000" {{ $autoInterval == 30000 ? 'selected' : '' }}>30s</option>
+                    <option value="0" {{ $currentAuto == 0 ? 'selected' : '' }}>Off</option>
+                    <option value="5000" {{ $currentAuto == 5000 ? 'selected' : '' }}>5s</option>
+                    <option value="10000" {{ $currentAuto == 10000 ? 'selected' : '' }}>10s</option>
+                    <option value="30000" {{ $currentAuto == 30000 ? 'selected' : '' }}>30s</option>
                 </select>
             </label>
 
@@ -526,6 +526,8 @@
             destroyShortcutKey: @json(config('raytech-log-viewer.security.destroy_shortcut.key', 'd')),
             homeUrl: @json(config('raytech-log-viewer.theme.back_url', '/')),
             csrfToken: @json(csrf_token()),
+            initialLineLimit: @json($lineLimit ?? 500),
+            initialAutoRefresh: @json($currentAuto ?? 10000),
             initialLines: @json($parsedLines)
         };
     </script>

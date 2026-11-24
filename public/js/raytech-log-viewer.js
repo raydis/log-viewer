@@ -712,10 +712,41 @@
         return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     }
 
-    // Lines Limit change
+    // Helper to keep sidebar links synchronized with the active session line limit
+    function updateSidebarLinksLineLimit(limit) {
+        if (!limit) return;
+        document.querySelectorAll('.sidebar .file-item').forEach(link => {
+            try {
+                const href = link.getAttribute('href');
+                if (href) {
+                    const url = new URL(href, window.location.origin);
+                    url.searchParams.set('lines', limit);
+                    link.setAttribute('href', url.pathname + url.search);
+                }
+            } catch (e) {}
+        });
+    }
+
+    // Lines Limit change with active session persistence
     const selLineLimit = document.getElementById('selLineLimit');
     if (selLineLimit) {
+        function initLineLimitState() {
+            const savedLines = sessionStorage.getItem('log_line_limit');
+            if (savedLines !== null && Array.from(selLineLimit.options).some(o => o.value === savedLines)) {
+                if (selLineLimit.value !== savedLines) {
+                    selLineLimit.value = savedLines;
+                    updateSidebarLinksLineLimit(savedLines);
+                    reloadLogs(false);
+                    return;
+                }
+            }
+            updateSidebarLinksLineLimit(selLineLimit.value);
+        }
+        initLineLimitState();
+
         selLineLimit.addEventListener('change', function() {
+            sessionStorage.setItem('log_line_limit', this.value);
+            updateSidebarLinksLineLimit(this.value);
             reloadLogs(false);
         });
     }
@@ -728,11 +759,20 @@
         });
     }
 
-    // Auto Refresh Change
+    // Auto Refresh with active session persistence
     const selAutoRefresh = document.getElementById('selAutoRefresh');
     if (selAutoRefresh) {
         selAutoRefresh.addEventListener('change', function() {
+            sessionStorage.setItem('log_auto_refresh', this.value);
             setupAutoRefresh();
+
+            // Notify backend session in background
+            if (indexUrl) {
+                const separator = indexUrl.includes('?') ? '&' : '?';
+                fetch(`${indexUrl}${separator}auto_refresh=${encodeURIComponent(this.value)}&ajax=1`, {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                }).catch(() => {});
+            }
         });
     }
 
@@ -753,18 +793,28 @@
             if (spinIcon) spinIcon.classList.remove('fa-spin');
         }
     }
-    setupAutoRefresh();
+
+    function initAutoRefreshState() {
+        if (!selAutoRefresh) return;
+        const savedAuto = sessionStorage.getItem('log_auto_refresh');
+        if (savedAuto !== null && Array.from(selAutoRefresh.options).some(o => o.value === savedAuto)) {
+            selAutoRefresh.value = savedAuto;
+        }
+        setupAutoRefresh();
+    }
+    initAutoRefreshState();
 
     // Reload Logs via AJAX without full page flicker
     function reloadLogs(silent = false) {
         if (!activeKey || !indexUrl) return;
         const lineLimit = selLineLimit ? selLineLimit.value : 500;
+        const autoRefreshVal = selAutoRefresh ? selAutoRefresh.value : '';
         if (!silent && loadingOverlay) {
             loadingOverlay.classList.add('active');
         }
 
         const separator = indexUrl.includes('?') ? '&' : '?';
-        const url = `${indexUrl}${separator}key=${encodeURIComponent(activeKey)}&lines=${encodeURIComponent(lineLimit)}&order=${encodeURIComponent(activeOrder)}&ajax=1`;
+        const url = `${indexUrl}${separator}key=${encodeURIComponent(activeKey)}&lines=${encodeURIComponent(lineLimit)}&order=${encodeURIComponent(activeOrder)}&auto_refresh=${encodeURIComponent(autoRefreshVal)}&ajax=1`;
 
         fetch(url, {
             headers: {

@@ -370,9 +370,27 @@ class RaytechLogViewerController extends Controller
         $defaultLines = (int) config('raytech-log-viewer.features.default_lines', 500);
         $allowedLines = config('raytech-log-viewer.features.lines_options', [100, 250, 500, 1000, 2500, 5000]);
 
-        $lineLimit = (int) $request->query('lines', $defaultLines);
+        // Active session persistent line limit
+        if ($request->has('lines')) {
+            $lineLimit = (int) $request->query('lines');
+            if (in_array($lineLimit, $allowedLines, true)) {
+                $request->session()->put('log_viewer_line_limit', $lineLimit);
+            }
+        } else {
+            $lineLimit = (int) $request->session()->get('log_viewer_line_limit', $defaultLines);
+        }
+
         if (!in_array($lineLimit, $allowedLines, true)) {
             $lineLimit = $defaultLines;
+        }
+
+        // Active session persistent auto-refresh interval
+        $defaultAutoRefresh = (int) config('raytech-log-viewer.features.auto_refresh_default', 10000);
+        if ($request->has('auto_refresh')) {
+            $autoInterval = (int) $request->input('auto_refresh');
+            $request->session()->put('log_viewer_auto_refresh', $autoInterval);
+        } else {
+            $autoInterval = (int) $request->session()->get('log_viewer_auto_refresh', $defaultAutoRefresh);
         }
 
         $defaultOrder = config('raytech-log-viewer.features.default_order', 'desc');
@@ -431,6 +449,7 @@ class RaytechLogViewerController extends Controller
             'stats' => $stats,
             'lineLimit' => $lineLimit,
             'allowedLines' => $allowedLines,
+            'autoInterval' => $autoInterval,
             'order' => $order,
             'themeConfig' => config('raytech-log-viewer.theme', []),
             'features' => config('raytech-log-viewer.features', []),
