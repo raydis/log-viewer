@@ -5,6 +5,20 @@ namespace Raytech\LogViewer\Services;
 class LogFileManager
 {
     /**
+     * In-memory cache of discovered log files to avoid repeated glob/stat disk overhead.
+     *
+     * @var array|null
+     */
+    protected static ?array $cachedLogFiles = null;
+
+    /**
+     * Timestamp of the cached log files.
+     *
+     * @var int
+     */
+    protected static int $cacheTimestamp = 0;
+
+    /**
      * Programmatically registered extra log files.
      *
      * @var array
@@ -189,11 +203,17 @@ class LogFileManager
 
     /**
      * Retrieve all available log files (both Laravel and Server logs).
+     * Leverages lightweight short-lived caching to avoid repeated disk I/O on auto-refresh polling.
      *
+     * @param bool $forceRefresh
      * @return array
      */
-    public function getAllLogFiles(): array
+    public function getAllLogFiles(bool $forceRefresh = false): array
     {
+        if (!$forceRefresh && static::$cachedLogFiles !== null && (time() - static::$cacheTimestamp) < 4) {
+            return static::$cachedLogFiles;
+        }
+
         $logFiles = [];
 
         // 1. Laravel Logs
@@ -363,6 +383,9 @@ class LogFileManager
             });
         }
 
+        static::$cachedLogFiles = $logFiles;
+        static::$cacheTimestamp = time();
+
         return $logFiles;
     }
 
@@ -431,7 +454,7 @@ class LogFileManager
         }
 
         $buffer = '';
-        $chunkSize = 16384;  // 16KB chunk size
+        $chunkSize = 65536;  // 64KB chunk buffer (reduces disk seek/read syscalls by 4x)
         $bytesToRead = min($fsize, $maxBytes);
         $pos = $fsize;
         $newlineCount = 0;
@@ -483,6 +506,10 @@ class LogFileManager
             }
         } catch (\Throwable $e) {
             $cleared = false;
+        }
+
+        if ($cleared) {
+            static::$cachedLogFiles = null;
         }
 
         return $cleared;

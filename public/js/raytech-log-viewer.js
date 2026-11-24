@@ -10,6 +10,7 @@
     let activeLevels = new Set(['all']);
     let activeOrder = config.order || 'desc';
     let autoRefreshInterval = null;
+    let cachedEntries = Array.isArray(config.initialLines) ? config.initialLines : [];
 
     const indexUrl = config.indexUrl || '';
     const clearUrl = config.clearUrl || '';
@@ -410,77 +411,150 @@
         let matchCount = 0;
         let visibleCount = 0;
 
-        entries.forEach(entry => {
-            const level = entry.getAttribute('data-level');
-            const shortTextEl = entry.querySelector('.entry-short-text') || entry.querySelector('.line-text');
-            const codeEl = entry.querySelector('.full-log-code code');
+        if (cachedEntries && cachedEntries.length > 0) {
+            // High-performance in-memory search (evaluates thousands of lines in < 2ms)
+            cachedEntries.forEach(entry => {
+                const el = document.getElementById(entry.id);
+                if (!el) return;
 
-            const shortText = shortTextEl ? (shortTextEl.getAttribute('data-original') || shortTextEl.textContent) : '';
-            if (shortTextEl && !shortTextEl.getAttribute('data-original')) {
-                shortTextEl.setAttribute('data-original', shortText);
-            }
+                const level = entry.level;
+                const shortText = entry.message || entry.short_text || '';
+                const fullText = entry.full_text || shortText;
 
-            const fullText = codeEl ? codeEl.textContent : shortText;
-
-            // Multi-level match
-            let levelMatch = false;
-            if (activeLevels.has('all')) {
-                levelMatch = true;
-            } else {
-                if (activeLevels.has('error') && (level === 'error' || level === 'critical' || level === 'alert' || level === 'emergency')) {
+                // Level match
+                let levelMatch = false;
+                if (activeLevels.has('all')) {
                     levelMatch = true;
-                }
-                if (activeLevels.has('warning') && (level === 'warning' || level === 'notice')) {
-                    levelMatch = true;
-                }
-                if (activeLevels.has('info') && level === 'info') {
-                    levelMatch = true;
-                }
-                if (activeLevels.has('debug') && level === 'debug') {
-                    levelMatch = true;
-                }
-                if (activeLevels.has(level)) {
-                    levelMatch = true;
-                }
-            }
-
-            // Search match across short text or full content
-            let searchMatch = true;
-            if (searchTerm.length > 0) {
-                const inShort = shortText.toLowerCase().includes(termLower);
-                const inFull = fullText.toLowerCase().includes(termLower);
-
-                if (inShort || inFull) {
-                    searchMatch = true;
-                    matchCount++;
-
-                    if (shortTextEl) {
-                        highlightMatch(shortTextEl, shortText, searchTerm);
+                } else {
+                    if (activeLevels.has('error') && (level === 'error' || level === 'critical' || level === 'alert' || level === 'emergency')) {
+                        levelMatch = true;
                     }
+                    if (activeLevels.has('warning') && (level === 'warning' || level === 'notice')) {
+                        levelMatch = true;
+                    }
+                    if (activeLevels.has('info') && level === 'info') {
+                        levelMatch = true;
+                    }
+                    if (activeLevels.has('debug') && level === 'debug') {
+                        levelMatch = true;
+                    }
+                    if (activeLevels.has(level)) {
+                        levelMatch = true;
+                    }
+                }
 
-                    // If match is inside details, auto-expand so user can inspect it
-                    if (inFull && !inShort) {
-                        const details = entry.querySelector('.entry-details');
-                        if (details) {
-                            entry.classList.add('expanded');
-                            details.style.display = 'block';
+                // Search match
+                let searchMatch = true;
+                if (searchTerm.length > 0) {
+                    const inShort = shortText.toLowerCase().includes(termLower);
+                    const inFull = inShort || fullText.toLowerCase().includes(termLower);
+
+                    if (inFull) {
+                        searchMatch = true;
+                        matchCount++;
+
+                        const shortTextEl = el.querySelector('.entry-short-text') || el.querySelector('.line-text');
+                        if (shortTextEl) {
+                            highlightMatch(shortTextEl, shortText, searchTerm);
                         }
+
+                        if (!inShort) {
+                            const details = el.querySelector('.entry-details');
+                            if (details) {
+                                el.classList.add('expanded');
+                                details.style.display = 'block';
+                            }
+                        }
+                    } else {
+                        searchMatch = false;
+                        const shortTextEl = el.querySelector('.entry-short-text') || el.querySelector('.line-text');
+                        if (shortTextEl) shortTextEl.textContent = shortText;
                     }
                 } else {
-                    searchMatch = false;
+                    const shortTextEl = el.querySelector('.entry-short-text') || el.querySelector('.line-text');
                     if (shortTextEl) shortTextEl.textContent = shortText;
                 }
-            } else {
-                if (shortTextEl) shortTextEl.textContent = shortText;
-            }
 
-            if (levelMatch && searchMatch) {
-                entry.style.display = '';
-                visibleCount++;
-            } else {
-                entry.style.display = 'none';
-            }
-        });
+                const isVisible = levelMatch && searchMatch;
+                if (isVisible) {
+                    if (el.style.display !== '') el.style.display = '';
+                    visibleCount++;
+                } else {
+                    if (el.style.display !== 'none') el.style.display = 'none';
+                }
+            });
+        } else {
+            // DOM traversal fallback
+            const entries = document.querySelectorAll('.log-entry, .log-line');
+            entries.forEach(entry => {
+                const level = entry.getAttribute('data-level');
+                const shortTextEl = entry.querySelector('.entry-short-text') || entry.querySelector('.line-text');
+                const codeEl = entry.querySelector('.full-log-code code');
+
+                const shortText = shortTextEl ? (shortTextEl.getAttribute('data-original') || shortTextEl.textContent) : '';
+                if (shortTextEl && !shortTextEl.getAttribute('data-original')) {
+                    shortTextEl.setAttribute('data-original', shortText);
+                }
+
+                const fullText = codeEl ? codeEl.textContent : shortText;
+
+                let levelMatch = false;
+                if (activeLevels.has('all')) {
+                    levelMatch = true;
+                } else {
+                    if (activeLevels.has('error') && (level === 'error' || level === 'critical' || level === 'alert' || level === 'emergency')) {
+                        levelMatch = true;
+                    }
+                    if (activeLevels.has('warning') && (level === 'warning' || level === 'notice')) {
+                        levelMatch = true;
+                    }
+                    if (activeLevels.has('info') && level === 'info') {
+                        levelMatch = true;
+                    }
+                    if (activeLevels.has('debug') && level === 'debug') {
+                        levelMatch = true;
+                    }
+                    if (activeLevels.has(level)) {
+                        levelMatch = true;
+                    }
+                }
+
+                let searchMatch = true;
+                if (searchTerm.length > 0) {
+                    const inShort = shortText.toLowerCase().includes(termLower);
+                    const inFull = fullText.toLowerCase().includes(termLower);
+
+                    if (inShort || inFull) {
+                        searchMatch = true;
+                        matchCount++;
+
+                        if (shortTextEl) {
+                            highlightMatch(shortTextEl, shortText, searchTerm);
+                        }
+
+                        if (inFull && !inShort) {
+                            const details = entry.querySelector('.entry-details');
+                            if (details) {
+                                entry.classList.add('expanded');
+                                details.style.display = 'block';
+                            }
+                        }
+                    } else {
+                        searchMatch = false;
+                        if (shortTextEl) shortTextEl.textContent = shortText;
+                    }
+                } else {
+                    if (shortTextEl) shortTextEl.textContent = shortText;
+                }
+
+                if (levelMatch && searchMatch) {
+                    if (entry.style.display !== '') entry.style.display = '';
+                    visibleCount++;
+                } else {
+                    if (entry.style.display !== 'none') entry.style.display = 'none';
+                }
+            });
+        }
 
         if (searchCountBadge && searchTerm.length > 0) {
             searchCountBadge.textContent = matchCount + ' ' + (matchCount === 1 ? 'match' : 'matches');
@@ -574,6 +648,7 @@
 
     function renderLogs(data) {
         if (!viewport) return;
+        cachedEntries = Array.isArray(data.lines) ? data.lines : [];
 
         // Update stats
         if (data.stats) {

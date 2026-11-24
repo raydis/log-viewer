@@ -43,7 +43,18 @@ class RaytechLogViewerController extends Controller
             return $next($request);
         })->except(['asset']);
 
-        // 2. Custom route middlewares / callbacks
+        // 2. HTTP Security Headers (Clickjacking, MIME-sniffing, and Referrer leakage protection)
+        $this->middleware(function ($request, $next) {
+            $response = $next($request);
+            if ($response instanceof SymfonyResponse) {
+                $response->headers->set('X-Frame-Options', 'SAMEORIGIN');
+                $response->headers->set('X-Content-Type-Options', 'nosniff');
+                $response->headers->set('Referrer-Policy', 'strict-origin-when-cross-origin');
+            }
+            return $response;
+        })->except(['asset']);
+
+        // 3. Custom route middlewares / callbacks
         $rawMiddlewares = $this->middlewareHandler();
         $middlewares = $this->parseMiddlewares($rawMiddlewares);
 
@@ -445,6 +456,18 @@ class RaytechLogViewerController extends Controller
             return redirect()->route($namePrefix . 'index');
         }
 
+        $throttleKey = 'raytech_log_viewer_auth:' . ($request->ip() ?? 'unknown');
+        $maxAttempts = (int) config('raytech-log-viewer.security.max_attempts', 3);
+        $lockoutDuration = (int) config('raytech-log-viewer.security.lockout_duration', 60);
+
+        // 1. IP-level rate limiting check (prevents cookie-dropping brute force scripts)
+        if (\Illuminate\Support\Facades\RateLimiter::tooManyAttempts($throttleKey, $maxAttempts)) {
+            $seconds = \Illuminate\Support\Facades\RateLimiter::availableIn($throttleKey);
+            $lockoutRedirect = config('raytech-log-viewer.security.lockout_redirect', '/');
+            return redirect($lockoutRedirect)->with('error', "Too many failed attempts from your IP. Access is locked for {$seconds} more second(s).");
+        }
+
+        // 2. Session-level lockout check
         $lockoutKey = (string) config('raytech-log-viewer.security.lockout_key', 'log_viewer_locked_until');
         $lockoutUntil = (int) $request->session()->get($lockoutKey, 0);
 
@@ -458,13 +481,13 @@ class RaytechLogViewerController extends Controller
         $configuredPassword = (string) config('raytech-log-viewer.security.password', '');
         $sessionKey = (string) config('raytech-log-viewer.security.session_key', 'log_viewer_authenticated');
         $attemptsKey = (string) config('raytech-log-viewer.security.attempts_key', 'log_viewer_failed_attempts');
-        $maxAttempts = (int) config('raytech-log-viewer.security.max_attempts', 3);
         $namePrefix = config('raytech-log-viewer.route.name', 'log-viewer.');
 
         // Validate strictly using cryptographic hash methods (never plain string comparison)
         $isMatch = $this->verifyPassword($inputPassword, $configuredPassword);
 
         if ($isMatch) {
+            \Illuminate\Support\Facades\RateLimiter::clear($throttleKey);
             $request->session()->forget($attemptsKey);
             $request->session()->forget($lockoutKey);
             $request->session()->regenerate();
@@ -473,12 +496,14 @@ class RaytechLogViewerController extends Controller
             return redirect()->route($namePrefix . 'index');
         }
 
-        // Increment failed attempts
+        // Hit IP-based rate limiter
+        \Illuminate\Support\Facades\RateLimiter::hit($throttleKey, $lockoutDuration);
+
+        // Increment failed attempts in session
         $attempts = (int) $request->session()->get($attemptsKey, 0) + 1;
         $request->session()->put($attemptsKey, $attempts);
 
         if ($attempts >= $maxAttempts) {
-            $lockoutDuration = (int) config('raytech-log-viewer.security.lockout_duration', 60);
             $request->session()->put($lockoutKey, time() + $lockoutDuration);
             $request->session()->forget($attemptsKey);
             $request->session()->forget($sessionKey);
@@ -814,61 +839,19 @@ class RaytechLogViewerController extends Controller
 
     /**
      * Serve static package assets (css, js, images, fonts) directly if not published.
+     * Hardened against directory traversal with strict extension whitelist and realpath verification.
      *
      * @param string $file
      * @return \Symfony\Component\HttpFoundation\BinaryFileResponse|\Illuminate\Http\Response
      */
     public function asset(string $file)
     {
-        // Sanitize path against directory traversal
-        $file = str_replace(['../', '..\\'], '', $file);
-        $file = ltrim($file, '/\\');
-
-        $targetPath = null;
-
-        // Resolve package source asset (3 levels up from Http/Controllers is package root)
-        $packagePublic = realpath(dirname(__DIR__, 3) . '/public');
-        $candidate = $packagePublic ? realpath($packagePublic . '/' . $file) : null;
-        $packageAsset = ($packagePublic && $candidate && str_starts_with($candidate, $packagePublic) && is_file($candidate))
-            ? $candidate
-            : null;
-
-        if (!$packageAsset && ($file === 'default_logo.jpg' || $file === 'img/default_logo.jpg')) {
-            $logoCandidate = $packagePublic ? realpath($packagePublic . '/img/default_logo.jpg') : null;
-            if ($logoCandidate && is_file($logoCandidate)) {
-                $packageAsset = $logoCandidate;
-            }
-        }
-
-        // 1. Check published public path
-        if (function_exists('public_path')) {
-            $published = public_path('vendor/raytech-log-viewer/' . $file);
-            if (file_exists($published) && is_file($published)) {
-                // Compare timestamps: if package has newer code, auto-sync and serve latest code
-                if ($packageAsset && filemtime($packageAsset) > filemtime($published)) {
-                    if (is_writable($published)) {
-                        @copy($packageAsset, $published);
-                    }
-                    $targetPath = $packageAsset;
-                } else {
-                    $targetPath = $published;
-                }
-            }
-        }
-
-        // 2. Fallback to package source asset directly
-        if (!$targetPath && $packageAsset) {
-            $targetPath = $packageAsset;
-        }
-
-        if (!$targetPath || !file_exists($targetPath)) {
-            abort(404, 'Asset not found.');
-        }
-
-        $extension = strtolower(pathinfo($targetPath, PATHINFO_EXTENSION));
+        // 1. Strict extension whitelist & MIME resolution
+        $extension = strtolower(pathinfo($file, PATHINFO_EXTENSION));
         $contentTypes = [
             'css'   => 'text/css; charset=utf-8',
             'js'    => 'application/javascript; charset=utf-8',
+            'map'   => 'application/json; charset=utf-8',
             'jpg'   => 'image/jpeg',
             'jpeg'  => 'image/jpeg',
             'png'   => 'image/png',
@@ -882,11 +865,86 @@ class RaytechLogViewerController extends Controller
             'otf'   => 'font/otf',
         ];
 
-        $contentType = $contentTypes[$extension] ?? 'application/octet-stream';
+        if (!isset($contentTypes[$extension])) {
+            abort(404, 'Asset type not permitted.');
+        }
 
-        return response()->file($targetPath, [
+        // 2. Reject directory traversal attempts and null bytes
+        if (str_contains($file, '..') || str_contains($file, "\0")) {
+            abort(404, 'Invalid asset path.');
+        }
+
+        $file = ltrim(str_replace('\\', '/', $file), '/');
+        $targetPath = null;
+
+        // 3. Resolve package source asset root (3 levels up from Http/Controllers)
+        $packagePublic = realpath(dirname(__DIR__, 3) . '/public');
+        $candidate = $packagePublic ? realpath($packagePublic . '/' . $file) : null;
+        $packageAsset = ($packagePublic && $candidate && str_starts_with($candidate, $packagePublic) && is_file($candidate))
+            ? $candidate
+            : null;
+
+        if (!$packageAsset && ($file === 'default_logo.jpg' || $file === 'img/default_logo.jpg')) {
+            $logoCandidate = $packagePublic ? realpath($packagePublic . '/img/default_logo.jpg') : null;
+            if ($logoCandidate && is_file($logoCandidate)) {
+                $packageAsset = $logoCandidate;
+            }
+        }
+
+        // 4. Check published public path with strict realpath boundary verification
+        if (function_exists('public_path')) {
+            $publishedBase = realpath(public_path('vendor/raytech-log-viewer'));
+            $publishedCandidate = public_path('vendor/raytech-log-viewer/' . $file);
+            if (file_exists($publishedCandidate) && is_file($publishedCandidate)) {
+                $realPublished = realpath($publishedCandidate);
+                if ($publishedBase && $realPublished && str_starts_with($realPublished, $publishedBase)) {
+                    // Compare timestamps: if package has newer code, auto-sync and serve latest code
+                    if ($packageAsset && filemtime($packageAsset) > filemtime($realPublished)) {
+                        if (is_writable($realPublished)) {
+                            @copy($packageAsset, $realPublished);
+                        }
+                        $targetPath = $packageAsset;
+                    } else {
+                        $targetPath = $realPublished;
+                    }
+                }
+            }
+        }
+
+        // 5. Fallback to package source asset directly
+        if (!$targetPath && $packageAsset) {
+            $targetPath = $packageAsset;
+        }
+
+        if (!$targetPath || !file_exists($targetPath)) {
+            abort(404, 'Asset not found.');
+        }
+
+        $contentType = $contentTypes[$extension];
+        $lastModified = filemtime($targetPath);
+        $etag = '"' . md5($targetPath . $lastModified) . '"';
+
+        // 6. HTTP 304 Not Modified validation for high performance
+        if (isset($_SERVER['HTTP_IF_NONE_MATCH']) && trim($_SERVER['HTTP_IF_NONE_MATCH']) === $etag) {
+            return response('', 304, [
+                'ETag' => $etag,
+                'Cache-Control' => 'public, max-age=31536000',
+            ]);
+        }
+
+        $headers = [
             'Content-Type' => $contentType,
             'Cache-Control' => 'public, max-age=31536000',
-        ]);
+            'ETag' => $etag,
+            'Last-Modified' => gmdate('D, d M Y H:i:s', $lastModified) . ' GMT',
+        ];
+
+        try {
+            if (@is_readable($targetPath)) {
+                return response()->file($targetPath, $headers);
+            }
+        } catch (\Throwable $e) {}
+
+        return response(file_get_contents($targetPath), 200, $headers);
     }
 }

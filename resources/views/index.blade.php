@@ -521,7 +521,8 @@
             isSecurityEnabled: @json(!empty($isSecurityEnabled)),
             destroyShortcutKey: @json(config('raytech-log-viewer.security.destroy_shortcut.key', 'd')),
             homeUrl: @json(config('raytech-log-viewer.theme.back_url', '/')),
-            csrfToken: @json(csrf_token())
+            csrfToken: @json(csrf_token()),
+            initialLines: @json($parsedLines)
         };
     </script>
     <script src="{{ $jsUrl }}?v={{ $version ?? '1.0.0' }}"></script>

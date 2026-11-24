@@ -203,6 +203,11 @@ return [
             'shift' => true,
             'alt' => false,
         ],
+        // Sensitive data redaction in log messages, traces, and context
+        'redaction' => [
+            'enabled' => env('LOG_VIEWER_REDACTION_ENABLED', true),
+            'replacement' => '[REDACTED]',
+        ],
     ],
 
     /*
