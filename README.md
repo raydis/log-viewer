@@ -40,6 +40,8 @@
   - [Clearing / Truncating Logs](#10-clearing--truncating-logs)
   - [Dark & Light Themes](#11-dark--light-themes)
 - [Configuration & Environment Variables](#-configuration--environment-variables)
+  - [One-Click Copy Complete .env Configuration](#-one-click-copy-complete-env-configuration)
+  - [Configuration Reference Tables](#configuration-reference-tables)
 - [Security & Access Control](#-security--access-control)
   - [Option A: Route Middleware Protection](#option-a-route-middleware-protection)
   - [Option B: Programmatic Gate Closure](#option-b-programmatic-gate-closure)
@@ -290,9 +292,83 @@ Filter visible records by severity level:
 
 ## ⚙️ Configuration & Environment Variables
 
-All settings can be configured via environment variables in your application's `.env` file or by editing `config/raytech-log-viewer.php`:
+All settings can be configured via environment variables in your application's `.env` file or by editing `config/raytech-log-viewer.php`.
 
-### General & Routing
+> [!TIP]
+> **Keep Only What You Need**: You **do not need to copy or keep all variables** in your `.env` file! All settings already come with safe, production-tested default values out of the box. You only need to add and customize the specific variables required for your project (e.g., setting `LOG_VIEWER_MIDDLEWARE` or changing `LOG_VIEWER_ROUTE_PREFIX`).
+
+---
+
+### 📋 One-Click Copy Complete .env Configuration
+
+If you prefer to have all available settings readily documented in your `.env` file, click the copy button on the snippet below and paste it directly into your `.env`:
+
+```dotenv
+# ==============================================================================
+# RayTech Log Viewer - Complete Environment Configuration
+# ==============================================================================
+# Note: You only need to keep the variables you want to customize.
+# Any variable omitted here will automatically use its package default.
+# ==============================================================================
+
+# --- General & Routing ---
+LOG_VIEWER_ENABLED=true
+LOG_VIEWER_ROUTE_PREFIX=log-viewer
+LOG_VIEWER_MIDDLEWARE=web
+# LOG_VIEWER_DOMAIN=admin.your-app.com
+
+# --- UI Theme & Branding ---
+LOG_VIEWER_THEME=light
+LOG_VIEWER_PRIMARY_COLOR="#1f6feb"
+LOG_VIEWER_TITLE="RayTech Log Viewer"
+LOG_VIEWER_LOGO="vendor/raytech-log-viewer/img/default_logo.png"
+LOG_VIEWER_SHOW_BACK_BUTTON=true
+LOG_VIEWER_BACK_URL="/"
+LOG_VIEWER_BACK_URL_NAME="Back To Home"
+
+# --- Log Discovery & Directories ---
+LOG_VIEWER_SHOW_SERVER_LOGS=false
+LOG_VIEWER_SCAN_SERVER_LOGS=false
+# LOG_VIEWER_DIRS="/var/log/custom,storage/logs/workers"
+# LOG_VIEWER_FILES="storage/logs/cron.log,storage/logs/queue.log"
+
+# --- Features & Action Controls ---
+LOG_VIEWER_ORDER=desc
+LOG_VIEWER_ALLOW_DOWNLOAD=true
+LOG_VIEWER_ALLOW_CLEAR=true
+LOG_VIEWER_ALLOW_DAYS_CLEANUP=false
+LOG_VIEWER_ALLOW_RAW=true
+LOG_VIEWER_USE_CDN=false
+
+# --- Global Secret Shortcut (Open from anywhere via Ctrl+Shift+X) ---
+LOG_VIEWER_SHORTCUT_ENABLED=false
+LOG_VIEWER_SHORTCUT_AUTO_INJECT=true
+LOG_VIEWER_SHORTCUT_ENCRYPT=true
+LOG_VIEWER_SHORTCUT_KEY=x
+LOG_VIEWER_SHORTCUT_CTRL=true
+LOG_VIEWER_SHORTCUT_SHIFT=true
+LOG_VIEWER_SHORTCUT_ALT=false
+LOG_VIEWER_SHORTCUT_NEW_TAB=true
+
+# --- Security, Password Protection & Rate Limiting ---
+LOG_VIEWER_PASSWORD_PROTECTED=false
+# Default hash of 'test26'. Generate custom hash: php artisan raytech-log-viewer:hash <password>
+LOG_VIEWER_PASSWORD="$2y$10$ZfUboNTMgBUhU5kVfoWyTu8X4B4WMr7trhWrjZGnpm4u9PLiDfv2W"
+# IP Whitelist: leave empty to allow all, or set exact IPs, wildcards ('192.168.1.*'), or CIDR ('10.0.0.0/8')
+# LOG_VIEWER_ALLOWED_IPS="127.0.0.1, ::1, 192.168.1.*"
+LOG_VIEWER_MAX_ATTEMPTS=3
+LOG_VIEWER_LOCKOUT_REDIRECT="/"
+LOG_VIEWER_LOCKOUT_DURATION=60
+LOG_VIEWER_DESTROY_SHORTCUT_ENABLED=true
+LOG_VIEWER_DESTROY_SHORTCUT_KEY=d
+LOG_VIEWER_REDACTION_ENABLED=true
+```
+
+---
+
+### Configuration Reference Tables
+
+#### General & Routing
 
 | `.env` Variable | Default | Description |
 |---|---|---|
@@ -301,7 +377,7 @@ All settings can be configured via environment variables in your application's `
 | `LOG_VIEWER_MIDDLEWARE` | `web` | Middlewares protecting the route (e.g. `web,auth,admin`) |
 | `LOG_VIEWER_DOMAIN` | `null` | Optional domain or subdomain restriction |
 
-### Appearance & Branding
+#### Appearance & Branding
 
 | `.env` Variable | Default | Description |
 |---|---|---|
@@ -313,7 +389,7 @@ All settings can be configured via environment variables in your application's `
 | `LOG_VIEWER_BACK_URL` | `/` | Destination URL when clicking the back button |
 | `LOG_VIEWER_BACK_URL_NAME` | `Back To Home` | Label text on the back button |
 
-### Log Files & Discovery
+#### Log Files & Discovery
 
 | `.env` Variable | Default | Description |
 |---|---|---|
@@ -322,7 +398,7 @@ All settings can be configured via environment variables in your application's `
 | `LOG_VIEWER_DIRS` | `null` | Comma-separated list of extra directories to scan |
 | `LOG_VIEWER_FILES` | `null` | Comma-separated list of specific log files to include |
 
-### Features & Behavior
+#### Features & Behavior
 
 | `.env` Variable | Default | Description |
 |---|---|---|
@@ -332,6 +408,32 @@ All settings can be configured via environment variables in your application's `
 | `LOG_VIEWER_ALLOW_RAW` | `true` | Allow viewing unformatted raw logs in browser |
 | `LOG_VIEWER_ALLOW_DAYS_CLEANUP`| `false` | Guard allowing age-based log purging via artisan command |
 | `LOG_VIEWER_USE_CDN` | `false` | Use local offline assets (`false`) or external CDN (`true`) |
+
+#### Global Secret Shortcut
+
+| `.env` Variable | Default | Description |
+|---|---|---|
+| `LOG_VIEWER_SHORTCUT_ENABLED` | `false` | Enable global hotkey (<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>X</kbd>) across app |
+| `LOG_VIEWER_SHORTCUT_AUTO_INJECT` | `true` | Automatically inject script into HTML web responses |
+| `LOG_VIEWER_SHORTCUT_ENCRYPT` | `true` | Obfuscate script so secret keys and URLs are hidden in HTML source |
+| `LOG_VIEWER_SHORTCUT_KEY` | `x` | Trigger key character |
+| `LOG_VIEWER_SHORTCUT_CTRL` | `true` | Require <kbd>Ctrl</kbd> (or <kbd>Cmd</kbd> on Mac) |
+| `LOG_VIEWER_SHORTCUT_SHIFT` | `true` | Require <kbd>Shift</kbd> key |
+| `LOG_VIEWER_SHORTCUT_ALT` | `false` | Require <kbd>Alt</kbd> key |
+| `LOG_VIEWER_SHORTCUT_NEW_TAB` | `true` | Open log viewer in a new browser tab |
+
+#### Security, Password & Lockout
+
+| `.env` Variable | Default | Description |
+|---|---|---|
+| `LOG_VIEWER_PASSWORD_PROTECTED` | `false` | Enable standalone password challenge screen |
+| `LOG_VIEWER_PASSWORD` | `test26 hash` | Bcrypt/SHA-256 hashed password |
+| `LOG_VIEWER_ALLOWED_IPS` | `null` | IP whitelist (`null` = open to all). Supports exact IPs, wildcards, and CIDR |
+| `LOG_VIEWER_MAX_ATTEMPTS` | `3` | Max failed password attempts before lockout |
+| `LOG_VIEWER_LOCKOUT_REDIRECT` | `/` | Redirect URL upon lockout |
+| `LOG_VIEWER_LOCKOUT_DURATION` | `60` | Lockout duration in seconds |
+| `LOG_VIEWER_DESTROY_SHORTCUT_KEY` | `d` | Emergency panic key (<kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>D</kbd>) to kill session & close tabs |
+| `LOG_VIEWER_REDACTION_ENABLED` | `true` | Redact sensitive passwords, tokens, API keys, database credentials, and cards |
 
 ---
 
