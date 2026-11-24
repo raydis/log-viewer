@@ -34,15 +34,54 @@ class LogFileManager
 
     /**
      * Add a custom log file at runtime.
+     * Blocks sensitive configuration, credential, or source files.
      *
      * @param string $path
      * @return void
      */
     public static function registerFile(string $path): void
     {
+        if ((new static())->isSensitiveFile($path)) {
+            return;
+        }
         if (!in_array($path, static::$runtimeFiles, true)) {
             static::$runtimeFiles[] = $path;
         }
+    }
+
+    /**
+     * Check if a file path points to a sensitive system, application, or credential file.
+     * Blocks accidental or malicious exposure of .env*, PHP source, keys, certs, SQL, and private keys.
+     *
+     * @param string $path
+     * @return bool
+     */
+    public function isSensitiveFile(string $path): bool
+    {
+        $base = strtolower(basename($path));
+
+        // Block sensitive prefix/name patterns
+        if (str_starts_with($base, '.env') ||
+            str_starts_with($base, '.git') ||
+            str_starts_with($base, '.ht') ||
+            str_contains($base, 'id_rsa') ||
+            str_contains($base, 'id_ed25519') ||
+            str_contains($base, 'id_dsa') ||
+            str_contains($base, 'id_ecdsa')
+        ) {
+            return true;
+        }
+
+        // Block sensitive file extensions
+        $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+        $blockedExtensions = [
+            'php', 'phtml', 'php3', 'php4', 'php5', 'php7', 'php8', 'phps', 'inc',
+            'key', 'pem', 'crt', 'cer', 'der', 'p12', 'pfx',
+            'sql', 'sqlite', 'sqlite3', 'db', 'mdb', 'bak', 'dump',
+            'exe', 'dll', 'so', 'bin', 'sh', 'bat', 'cmd', 'ps1',
+        ];
+
+        return in_array($ext, $blockedExtensions, true);
     }
 
     /**
@@ -312,6 +351,11 @@ class LogFileManager
             ]));
 
             foreach ($customEntries as $entry) {
+                // If sensitive file path, reject immediately
+                if ($this->isSensitiveFile($entry)) {
+                    continue;
+                }
+
                 // If it is a directory, it was already handled by getServerLogDirectories
                 if (is_dir($entry) || (function_exists('base_path') && is_dir(base_path($entry)))) {
                     continue;
@@ -345,6 +389,11 @@ class LogFileManager
                 }
 
                 $realPath = realpath($resolvedPath) ?: $resolvedPath;
+
+                // Reject if resolved path is sensitive
+                if ($this->isSensitiveFile($realPath)) {
+                    continue;
+                }
                 $normalizedPath = str_replace('\\', '/', $realPath);
                 $type = str_contains($normalizedPath, 'storage/logs') ? 'laravel' : 'server';
                 $category = $type === 'laravel' ? 'Laravel Logs' : 'Custom Logs';
@@ -403,29 +452,44 @@ class LogFileManager
             return null;
         }
 
+        $resolved = null;
+
         // Lookup by key
         if (!empty($fileKey) && isset($allFiles[$fileKey])) {
-            return $allFiles[$fileKey];
+            $resolved = $allFiles[$fileKey];
         }
 
         // Lookup by name
-        if (!empty($fileName)) {
+        if (!$resolved && !empty($fileName)) {
             foreach ($allFiles as $file) {
                 if (strtolower($file['name']) === strtolower($fileName)) {
-                    return $file;
+                    $resolved = $file;
+                    break;
                 }
             }
         }
 
         // Default preference: 'laravel.log' first
-        foreach ($allFiles as $file) {
-            if (strtolower($file['name']) === 'laravel.log') {
-                return $file;
+        if (!$resolved) {
+            foreach ($allFiles as $file) {
+                if (strtolower($file['name']) === 'laravel.log') {
+                    $resolved = $file;
+                    break;
+                }
             }
         }
 
         // If 'laravel.log' does not exist, select the 1st log file
-        return reset($allFiles) ?: null;
+        if (!$resolved) {
+            $resolved = reset($allFiles) ?: null;
+        }
+
+        // Guard against sensitive file access
+        if ($resolved && isset($resolved['path']) && $this->isSensitiveFile($resolved['path'])) {
+            return null;
+        }
+
+        return $resolved;
     }
 
     /**
@@ -439,7 +503,7 @@ class LogFileManager
      */
     public function readTail(string $filePath, int $maxLines = 500, int $maxBytes = 4194304): array
     {
-        if (!file_exists($filePath)) {
+        if ($this->isSensitiveFile($filePath) || !file_exists($filePath)) {
             return [];
         }
 
@@ -491,7 +555,7 @@ class LogFileManager
      */
     public function clearFile(string $filePath): bool
     {
-        if (!file_exists($filePath)) {
+        if ($this->isSensitiveFile($filePath) || !file_exists($filePath)) {
             return false;
         }
 

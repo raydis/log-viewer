@@ -11,6 +11,109 @@
     let activeOrder = config.order || 'desc';
     let autoRefreshInterval = null;
     let cachedEntries = Array.isArray(config.initialLines) ? config.initialLines : [];
+    let entriesMap = new Map();
+
+    function syncEntriesMap() {
+        entriesMap.clear();
+        (cachedEntries || []).forEach(e => {
+            const id = e.id || ('log-entry-' + e.num);
+            entriesMap.set(id, e);
+        });
+    }
+    syncEntriesMap();
+
+    function buildDetailsHtml(entry) {
+        let exceptionHtml = '';
+        if (entry.exception) {
+            exceptionHtml = `
+                <div class="stack-exception-header">
+                    <div class="exception-type-title"><i class="fa fa-bug"></i> ${escapeHtml(entry.exception.class)}</div>
+                    <div class="exception-message-text">${escapeHtml(entry.exception.message)}</div>
+                    <div class="exception-file-line">
+                        in <strong>${escapeHtml(entry.exception.file)}</strong> on line <strong>${entry.exception.line}</strong>
+                    </div>
+                </div>
+            `;
+        }
+
+        const hasFrames = Array.isArray(entry.stack_frames) && entry.stack_frames.length > 0;
+        const hasContext = Boolean(entry.context_json);
+
+        const tabsHeaderHtml = `
+            <div class="details-tabs-header">
+                ${hasFrames ? `
+                    <button type="button" class="tab-link active" data-tab="trace">
+                        <i class="fa fa-stream"></i> Stack Trace <span class="tab-count">(${entry.stack_frames.length})</span>
+                    </button>
+                ` : ''}
+                ${hasContext ? `
+                    <button type="button" class="tab-link ${!hasFrames ? 'active' : ''}" data-tab="context">
+                        <i class="fa fa-database"></i> Context
+                    </button>
+                ` : ''}
+                <button type="button" class="tab-link ${!hasFrames && !hasContext ? 'active' : ''}" data-tab="raw">
+                    <i class="fa fa-code"></i> Raw Log
+                </button>
+                <div class="tab-actions-right">
+                    <button type="button" class="btn-compact btn-copy-full" data-copy-text="${encodeURIComponent(entry.body_content || entry.full_text || entry.text || '')}" title="Copy all body content">
+                        <i class="far fa-copy"></i> Copy Body Content
+                    </button>
+                </div>
+            </div>
+        `;
+
+        let framesHtml = '';
+        if (hasFrames) {
+            framesHtml = '<div class="stack-trace-frames">';
+            entry.stack_frames.forEach(frame => {
+                framesHtml += `
+                    <div class="stack-frame-row">
+                        <span class="frame-number">#${frame.number}</span>
+                        <div class="frame-detail">
+                            ${frame.file ? `
+                                <div class="frame-location">
+                                    <span class="frame-filepath">${escapeHtml(frame.file)}</span>${frame.line ? `<span class="frame-colon">:</span><span class="frame-linenum">${frame.line}</span>` : ''}
+                                </div>
+                            ` : ''}
+                            <div class="frame-callcode"><code>${escapeHtml(frame.call)}</code></div>
+                        </div>
+                    </div>
+                `;
+            });
+            framesHtml += '</div>';
+        }
+
+        const contextHtml = hasContext
+            ? `<pre class="context-json-code"><code>${escapeHtml(entry.context_json)}</code></pre>`
+            : '';
+
+        const escapedFull = escapeHtml(entry.body_content || entry.full_text || entry.text || '');
+        const rawHtml = `<pre class="full-log-code"><code>${escapedFull}</code></pre>`;
+
+        const tabsPanesHtml = `
+            <div class="details-tab-panes">
+                ${hasFrames ? `<div class="tab-pane active" data-pane="trace">${framesHtml}</div>` : ''}
+                ${hasContext ? `<div class="tab-pane ${!hasFrames ? 'active' : ''}" data-pane="context">${contextHtml}</div>` : ''}
+                <div class="tab-pane ${!hasFrames && !hasContext ? 'active' : ''}" data-pane="raw">${rawHtml}</div>
+            </div>
+        `;
+
+        return exceptionHtml + tabsHeaderHtml + tabsPanesHtml;
+    }
+
+    function ensureDetailsRendered(entryEl) {
+        if (!entryEl) return;
+        const details = entryEl.querySelector('.entry-details');
+        if (!details || details.getAttribute('data-rendered') === '1') {
+            return;
+        }
+        const id = entryEl.id;
+        const entry = entriesMap.get(id);
+        if (entry) {
+            details.innerHTML = buildDetailsHtml(entry);
+            details.setAttribute('data-rendered', '1');
+        }
+    }
 
     const indexUrl = config.indexUrl || '';
     const clearUrl = config.clearUrl || '';
@@ -153,6 +256,7 @@
                 if (!details) return;
 
                 if (anyCollapsed) {
+                    ensureDetailsRendered(entry);
                     entry.classList.add('expanded');
                     details.style.display = 'block';
                 } else {
@@ -233,6 +337,7 @@
                         entry.classList.remove('expanded');
                         details.style.display = 'none';
                     } else {
+                        ensureDetailsRendered(entry);
                         entry.classList.add('expanded');
                         details.style.display = 'block';
                     }
@@ -373,13 +478,22 @@
         });
     });
 
-    // Live Search in Log Lines
+    // Live Search in Log Lines (Synchronized with 60 FPS requestAnimationFrame)
     let searchDebounce = null;
+    let searchRaf = null;
+
+    function scheduleFilter() {
+        if (searchRaf) {
+            cancelAnimationFrame(searchRaf);
+        }
+        clearTimeout(searchDebounce);
+        searchDebounce = setTimeout(() => {
+            searchRaf = requestAnimationFrame(applyFilters);
+        }, 80);
+    }
+
     if (searchInput) {
-        searchInput.addEventListener('input', function() {
-            clearTimeout(searchDebounce);
-            searchDebounce = setTimeout(applyFilters, 120);
-        });
+        searchInput.addEventListener('input', scheduleFilter);
     }
 
     if (searchClearBtn) {
@@ -391,7 +505,8 @@
         searchInput.value = '';
         if (searchClearBtn) searchClearBtn.style.display = 'none';
         if (searchCountBadge) searchCountBadge.style.display = 'none';
-        applyFilters();
+        if (searchRaf) cancelAnimationFrame(searchRaf);
+        searchRaf = requestAnimationFrame(applyFilters);
         searchInput.focus();
     }
 
@@ -399,7 +514,6 @@
         if (!searchInput) return;
         const searchTerm = searchInput.value.trim();
         const termLower = searchTerm.toLowerCase();
-        const entries = document.querySelectorAll('.log-entry, .log-line');
 
         if (searchTerm.length > 0) {
             if (searchClearBtn) searchClearBtn.style.display = 'block';
@@ -414,12 +528,12 @@
         if (cachedEntries && cachedEntries.length > 0) {
             // High-performance in-memory search (evaluates thousands of lines in < 2ms)
             cachedEntries.forEach(entry => {
-                const el = document.getElementById(entry.id);
+                const el = document.getElementById(entry.id || ('log-entry-' + entry.num));
                 if (!el) return;
 
                 const level = entry.level;
-                const shortText = entry.message || entry.short_text || '';
-                const fullText = entry.full_text || shortText;
+                const shortText = entry.header_text || entry.message || entry.short_text || '';
+                const fullText = entry.body_content || entry.full_text || shortText;
 
                 // Level match
                 let levelMatch = false;
@@ -459,6 +573,7 @@
                         }
 
                         if (!inShort) {
+                            ensureDetailsRendered(el);
                             const details = el.querySelector('.entry-details');
                             if (details) {
                                 el.classList.add('expanded');
@@ -533,6 +648,7 @@
                         }
 
                         if (inFull && !inShort) {
+                            ensureDetailsRendered(entry);
                             const details = entry.querySelector('.entry-details');
                             if (details) {
                                 entry.classList.add('expanded');
@@ -563,9 +679,33 @@
     }
 
     function highlightMatch(element, text, term) {
-        const regex = new RegExp('(' + escapeRegExp(term) + ')', 'gi');
-        const escaped = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-        element.innerHTML = escaped.replace(regex, '<mark class="search-match">$1</mark>');
+        element.textContent = '';
+        if (!term) {
+            element.textContent = text;
+            return;
+        }
+
+        const regex = new RegExp(escapeRegExp(term), 'gi');
+        let lastIndex = 0;
+        let match;
+        const fragment = document.createDocumentFragment();
+
+        while ((match = regex.exec(text)) !== null) {
+            if (match.index > lastIndex) {
+                fragment.appendChild(document.createTextNode(text.substring(lastIndex, match.index)));
+            }
+            const mark = document.createElement('mark');
+            mark.className = 'search-match';
+            mark.textContent = match[0];
+            fragment.appendChild(mark);
+            lastIndex = regex.lastIndex;
+        }
+
+        if (lastIndex < text.length) {
+            fragment.appendChild(document.createTextNode(text.substring(lastIndex)));
+        }
+
+        element.appendChild(fragment);
     }
 
     function escapeRegExp(string) {
@@ -688,11 +828,9 @@
             return;
         }
 
-        // Build HTML for structured entries
+        // Build HTML for structured entries (Lazy Details)
         function buildEntryHtml(entry) {
-            const escapedShort = escapeHtml(entry.message || entry.short_text || entry.text || '');
-            const escapedFull = escapeHtml(entry.full_text || entry.text || '');
-            const hasDetails = true;
+            const escapedShort = escapeHtml(entry.header_text || entry.message || entry.short_text || entry.text || '');
 
             let levelIcon = '<i class="fa fa-terminal log-level-icon icon-default" title="Log"></i>';
             if (entry.level === 'error') {
@@ -705,18 +843,6 @@
                 levelIcon = '<i class="fa fa-bug log-level-icon icon-debug" title="Debug"></i>';
             }
 
-            const levelTag = ['error', 'warning', 'info', 'debug'].includes(entry.level)
-                ? `<span class="level-tag tag-${entry.level}">${entry.level.toUpperCase()}</span>`
-                : '';
-            const errorTypeTag = entry.error_type
-                ? `<span class="error-type-tag" title="${entry.exception ? escapeHtml(entry.exception.class) : ''}">${escapeHtml(entry.error_type)}</span>`
-                : '';
-            const envTag = entry.environment
-                ? `<span class="env-tag">${escapeHtml(entry.environment)}</span>`
-                : '';
-            const timeTag = (entry.time || entry.timestamp)
-                ? `<span class="entry-time" title="${escapeHtml(entry.timestamp || '')}"><i class="far fa-clock"></i> ${escapeHtml(entry.time || entry.timestamp)}</span>`
-                : '';
             const chevron = '<i class="fa fa-chevron-right expand-chevron"></i>';
 
             let countBadge = '';
@@ -726,88 +852,11 @@
                 countBadge = `<span class="badge-lines" title="${entry.lines_count} lines"><i class="fa fa-layer-group"></i> +${entry.lines_count - 1}</span>`;
             }
 
-            // Build exception card if present
-            let exceptionHtml = '';
-            if (entry.exception) {
-                exceptionHtml = `
-                    <div class="stack-exception-header">
-                        <div class="exception-type-title"><i class="fa fa-bug"></i> ${escapeHtml(entry.exception.class)}</div>
-                        <div class="exception-message-text">${escapeHtml(entry.exception.message)}</div>
-                        <div class="exception-file-line">
-                            in <strong>${escapeHtml(entry.exception.file)}</strong> on line <strong>${entry.exception.line}</strong>
-                        </div>
-                    </div>
-                `;
-            }
-
-            // Build tabs header and panes
-            const hasFrames = Array.isArray(entry.stack_frames) && entry.stack_frames.length > 0;
-            const hasContext = Boolean(entry.context_json);
-
-            const tabsHeaderHtml = `
-                <div class="details-tabs-header">
-                    ${hasFrames ? `
-                        <button type="button" class="tab-link active" data-tab="trace">
-                            <i class="fa fa-stream"></i> Stack Trace <span class="tab-count">(${entry.stack_frames.length})</span>
-                        </button>
-                    ` : ''}
-                    ${hasContext ? `
-                        <button type="button" class="tab-link ${!hasFrames ? 'active' : ''}" data-tab="context">
-                            <i class="fa fa-database"></i> Context
-                        </button>
-                    ` : ''}
-                    <button type="button" class="tab-link ${!hasFrames && !hasContext ? 'active' : ''}" data-tab="raw">
-                        <i class="fa fa-code"></i> Raw Log
-                    </button>
-                    <div class="tab-actions-right">
-                        <button type="button" class="btn-compact btn-copy-full" data-copy-text="${encodeURIComponent(entry.body_content || entry.full_text || entry.text || '')}" title="Copy full content">
-                            <i class="far fa-copy"></i> Copy Body Content
-                        </button>
-                    </div>
-                </div>
-            `;
-
-            // Frames pane
-            let framesHtml = '';
-            if (hasFrames) {
-                framesHtml = '<div class="stack-trace-frames">';
-                entry.stack_frames.forEach(frame => {
-                    framesHtml += `
-                        <div class="stack-frame-row">
-                            <span class="frame-number">#${frame.number}</span>
-                            <div class="frame-detail">
-                                ${frame.file ? `
-                                    <div class="frame-location">
-                                        <span class="frame-filepath">${escapeHtml(frame.file)}</span>${frame.line ? `<span class="frame-colon">:</span><span class="frame-linenum">${frame.line}</span>` : ''}
-                                    </div>
-                                ` : ''}
-                                <div class="frame-callcode"><code>${escapeHtml(frame.call)}</code></div>
-                            </div>
-                        </div>
-                    `;
-                });
-                framesHtml += '</div>';
-            }
-
-            // Context pane
-            const contextHtml = hasContext
-                ? `<pre class="context-json-code"><code>${escapeHtml(entry.context_json)}</code></pre>`
-                : '';
-
-            // Raw pane
-            const rawHtml = `<pre class="full-log-code"><code>${escapedFull}</code></pre>`;
-
-            const tabsPanesHtml = `
-                <div class="details-tab-panes">
-                    ${hasFrames ? `<div class="tab-pane active" data-pane="trace">${framesHtml}</div>` : ''}
-                    ${hasContext ? `<div class="tab-pane ${!hasFrames ? 'active' : ''}" data-pane="context">${contextHtml}</div>` : ''}
-                    <div class="tab-pane ${!hasFrames && !hasContext ? 'active' : ''}" data-pane="raw">${rawHtml}</div>
-                </div>
-            `;
+            const entryId = entry.id || ('log-entry-' + entry.num);
 
             return `
                 <div class="log-entry level-${entry.level} has-details" 
-                     id="${entry.id || ('log-entry-' + entry.num)}" 
+                     id="${entryId}" 
                      data-level="${entry.level}" 
                      data-num="${entry.num}"
                      data-has-details="1">
@@ -834,11 +883,7 @@
                         </div>
                     </div>
 
-                    <div class="entry-details body-content-panel" style="display: none;">
-                        ${exceptionHtml}
-                        ${tabsHeaderHtml}
-                        ${tabsPanesHtml}
-                    </div>
+                    <div class="entry-details body-content-panel" style="display: none;" data-rendered="0"></div>
                 </div>
             `;
         }
@@ -868,6 +913,7 @@
             viewport.scrollTop = 0;
         }
 
+        syncEntriesMap();
         applyFilters();
         updateExpandAllLabel();
     }

@@ -399,73 +399,77 @@
                                     </div>
                                 </div>
 
-                                <!-- body_content: shown when clicking on header_group -->
-                                <div class="entry-details body-content-panel" style="display: none;">
-                                    @if(!empty($entry['exception']))
-                                        <div class="stack-exception-header">
-                                            <div class="exception-type-title"><i class="fa fa-bug"></i> {{ $entry['exception']['class'] }}</div>
-                                            <div class="exception-message-text">{{ $entry['exception']['message'] }}</div>
-                                            <div class="exception-file-line">
-                                                in <strong>{{ $entry['exception']['file'] }}</strong> on line <strong>{{ $entry['exception']['line'] }}</strong>
-                                            </div>
-                                        </div>
-                                    @endif
-
-                                    <!-- Details Tabs Navigation -->
-                                    <div class="details-tabs-header">
-                                        @if(!empty($entry['stack_frames']))
-                                            <button type="button" class="tab-link active" data-tab="trace">
-                                                <i class="fa fa-stream"></i> Stack Trace <span class="tab-count">({{ count($entry['stack_frames']) }})</span>
-                                            </button>
-                                        @endif
-                                        @if(!empty($entry['context_json']))
-                                            <button type="button" class="tab-link {{ empty($entry['stack_frames']) ? 'active' : '' }}" data-tab="context">
-                                                <i class="fa fa-database"></i> Context
-                                            </button>
-                                        @endif
-                                        <button type="button" class="tab-link {{ empty($entry['stack_frames']) && empty($entry['context_json']) ? 'active' : '' }}" data-tab="raw">
-                                            <i class="fa fa-code"></i> Raw Log
-                                        </button>
-                                        <div class="tab-actions-right">
-                                            <button type="button" class="btn-compact btn-copy-full" data-copy-text="{{ urlencode($entry['body_content'] ?? $entry['full_text'] ?? '') }}" title="Copy all body content">
-                                                <i class="far fa-copy"></i> Copy Body Content
-                                            </button>
-                                        </div>
-                                    </div>
-
-                                    <!-- Tab Panes -->
-                                    <div class="details-tab-panes">
-                                        @if(!empty($entry['stack_frames']))
-                                            <div class="tab-pane active" data-pane="trace">
-                                                <div class="stack-trace-frames">
-                                                    @foreach($entry['stack_frames'] as $frame)
-                                                        <div class="stack-frame-row">
-                                                            <span class="frame-number">#{{ $frame['number'] }}</span>
-                                                            <div class="frame-detail">
-                                                                @if(!empty($frame['file']))
-                                                                    <div class="frame-location">
-                                                                        <span class="frame-filepath">{{ $frame['file'] }}</span>@if(!empty($frame['line']))<span class="frame-colon">:</span><span class="frame-linenum">{{ $frame['line'] }}</span>@endif
-                                                                    </div>
-                                                                @endif
-                                                                <div class="frame-callcode"><code>{{ $frame['call'] }}</code></div>
-                                                            </div>
-                                                        </div>
-                                                    @endforeach
+                                <!-- body_content: shown when clicking on header_group (lazy-rendered for performance) -->
+                                @if($loop->index < 10)
+                                    <div class="entry-details body-content-panel" style="display: none;" data-rendered="1">
+                                        @if(!empty($entry['exception']))
+                                            <div class="stack-exception-header">
+                                                <div class="exception-type-title"><i class="fa fa-bug"></i> {{ $entry['exception']['class'] }}</div>
+                                                <div class="exception-message-text">{{ $entry['exception']['message'] }}</div>
+                                                <div class="exception-file-line">
+                                                    in <strong>{{ $entry['exception']['file'] }}</strong> on line <strong>{{ $entry['exception']['line'] }}</strong>
                                                 </div>
                                             </div>
                                         @endif
 
-                                        @if(!empty($entry['context_json']))
-                                            <div class="tab-pane {{ empty($entry['stack_frames']) ? 'active' : '' }}" data-pane="context">
-                                                <pre class="context-json-code"><code>{!! htmlspecialchars($entry['context_json'], ENT_QUOTES, 'UTF-8') !!}</code></pre>
+                                        <!-- Details Tabs Navigation -->
+                                        <div class="details-tabs-header">
+                                            @if(!empty($entry['stack_frames']))
+                                                <button type="button" class="tab-link active" data-tab="trace">
+                                                    <i class="fa fa-stream"></i> Stack Trace <span class="tab-count">({{ count($entry['stack_frames']) }})</span>
+                                                </button>
+                                            @endif
+                                            @if(!empty($entry['context_json']))
+                                                <button type="button" class="tab-link {{ empty($entry['stack_frames']) ? 'active' : '' }}" data-tab="context">
+                                                    <i class="fa fa-database"></i> Context
+                                                </button>
+                                            @endif
+                                            <button type="button" class="tab-link {{ empty($entry['stack_frames']) && empty($entry['context_json']) ? 'active' : '' }}" data-tab="raw">
+                                                <i class="fa fa-code"></i> Raw Log
+                                            </button>
+                                            <div class="tab-actions-right">
+                                                <button type="button" class="btn-compact btn-copy-full" data-copy-text="{{ urlencode($entry['body_content'] ?? $entry['full_text'] ?? '') }}" title="Copy all body content">
+                                                    <i class="far fa-copy"></i> Copy Body Content
+                                                </button>
                                             </div>
-                                        @endif
+                                        </div>
 
-                                        <div class="tab-pane {{ empty($entry['stack_frames']) && empty($entry['context_json']) ? 'active' : '' }}" data-pane="raw">
-                                            <pre class="full-log-code"><code>{!! htmlspecialchars($entry['body_content'] ?? $entry['full_text'] ?? '', ENT_QUOTES, 'UTF-8') !!}</code></pre>
+                                        <!-- Tab Panes -->
+                                        <div class="details-tab-panes">
+                                            @if(!empty($entry['stack_frames']))
+                                                <div class="tab-pane active" data-pane="trace">
+                                                    <div class="stack-trace-frames">
+                                                        @foreach($entry['stack_frames'] as $frame)
+                                                            <div class="stack-frame-row">
+                                                                <span class="frame-number">#{{ $frame['number'] }}</span>
+                                                                <div class="frame-detail">
+                                                                    @if(!empty($frame['file']))
+                                                                        <div class="frame-location">
+                                                                            <span class="frame-filepath">{{ $frame['file'] }}</span>@if(!empty($frame['line']))<span class="frame-colon">:</span><span class="frame-linenum">{{ $frame['line'] }}</span>@endif
+                                                                        </div>
+                                                                    @endif
+                                                                    <div class="frame-callcode"><code>{{ $frame['call'] }}</code></div>
+                                                                </div>
+                                                            </div>
+                                                        @endforeach
+                                                    </div>
+                                                </div>
+                                            @endif
+
+                                            @if(!empty($entry['context_json']))
+                                                <div class="tab-pane {{ empty($entry['stack_frames']) ? 'active' : '' }}" data-pane="context">
+                                                    <pre class="context-json-code"><code>{!! htmlspecialchars($entry['context_json'], ENT_QUOTES, 'UTF-8') !!}</code></pre>
+                                                </div>
+                                            @endif
+
+                                            <div class="tab-pane {{ empty($entry['stack_frames']) && empty($entry['context_json']) ? 'active' : '' }}" data-pane="raw">
+                                                <pre class="full-log-code"><code>{!! htmlspecialchars($entry['body_content'] ?? $entry['full_text'] ?? '', ENT_QUOTES, 'UTF-8') !!}</code></pre>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
+                                @else
+                                    <div class="entry-details body-content-panel" style="display: none;" data-rendered="0"></div>
+                                @endif
                             </div>
                         @endforeach
                     </div>

@@ -407,7 +407,7 @@ class RaytechLogViewerController extends Controller
 
         // Check if AJAX request for live updating / file switching
         if ($request->ajax() || $request->query('ajax') == '1' || $request->wantsJson()) {
-            return response()->json([
+            return $this->compressJsonResponse([
                 'status' => true,
                 'file' => $selectedFile,
                 'stats' => $stats,
@@ -415,7 +415,7 @@ class RaytechLogViewerController extends Controller
                 'date_groups' => $dateGroups,
                 'total_lines' => count($parsedLines),
                 'order' => $order,
-            ]);
+            ], $request);
         }
 
         $namePrefix = config('raytech-log-viewer.route.name', 'log-viewer.');
@@ -566,6 +566,8 @@ class RaytechLogViewerController extends Controller
     {
         $sessionKey = (string) config('raytech-log-viewer.security.session_key', 'log_viewer_authenticated');
         $request->session()->forget($sessionKey);
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
 
         if ($request->ajax() || $request->wantsJson()) {
             return response()->json([
@@ -605,7 +607,7 @@ class RaytechLogViewerController extends Controller
 
         $targetFile = $this->fileManager->resolveLogFile($fileKey, $fileName, $allFiles);
 
-        if (!$targetFile || !file_exists($targetFile['path'])) {
+        if (!$targetFile || !file_exists($targetFile['path']) || $this->fileManager->isSensitiveFile($targetFile['path'])) {
             if ($request->ajax() || $request->wantsJson()) {
                 return response()->json(['status' => false, 'message' => 'Log file not found or invalid.'], 404);
             }
@@ -665,7 +667,7 @@ class RaytechLogViewerController extends Controller
 
         $targetFile = $this->fileManager->resolveLogFile($fileKey, $fileName, $allFiles);
 
-        if (!$targetFile || !file_exists($targetFile['path'])) {
+        if (!$targetFile || !file_exists($targetFile['path']) || $this->fileManager->isSensitiveFile($targetFile['path'])) {
             abort(404, 'Log file not found.');
         }
 
@@ -696,7 +698,7 @@ class RaytechLogViewerController extends Controller
 
         $targetFile = $this->fileManager->resolveLogFile($fileKey, $fileName, $allFiles);
 
-        if (!$targetFile || !file_exists($targetFile['path'])) {
+        if (!$targetFile || !file_exists($targetFile['path']) || $this->fileManager->isSensitiveFile($targetFile['path'])) {
             abort(404, 'Log file not found.');
         }
 
@@ -946,5 +948,47 @@ class RaytechLogViewerController extends Controller
         } catch (\Throwable $e) {}
 
         return response(file_get_contents($targetPath), 200, $headers);
+    }
+
+    /**
+     * Send JSON response with optional gzip/deflate compression if supported by client.
+     * Reduces large log response network bandwidth by 80-90%.
+     *
+     * @param array $data
+     * @param Request $request
+     * @param int $status
+     * @return \Illuminate\Http\Response|\Illuminate\Http\JsonResponse
+     */
+    protected function compressJsonResponse(array $data, Request $request, int $status = 200)
+    {
+        $acceptEncoding = (string) $request->header('Accept-Encoding', '');
+
+        if (extension_loaded('zlib') && !ini_get('zlib.output_compression') && !ob_get_length()) {
+            $json = json_encode($data, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+
+            if (strlen($json) > 1024) {
+                if (str_contains($acceptEncoding, 'gzip')) {
+                    $compressed = gzencode($json, 6);
+                    if ($compressed !== false) {
+                        return response($compressed, $status, [
+                            'Content-Type' => 'application/json; charset=utf-8',
+                            'Content-Encoding' => 'gzip',
+                            'Vary' => 'Accept-Encoding',
+                        ]);
+                    }
+                } elseif (str_contains($acceptEncoding, 'deflate')) {
+                    $compressed = gzdeflate($json, 6);
+                    if ($compressed !== false) {
+                        return response($compressed, $status, [
+                            'Content-Type' => 'application/json; charset=utf-8',
+                            'Content-Encoding' => 'deflate',
+                            'Vary' => 'Accept-Encoding',
+                        ]);
+                    }
+                }
+            }
+        }
+
+        return response()->json($data, $status);
     }
 }
