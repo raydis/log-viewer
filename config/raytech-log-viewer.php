@@ -93,7 +93,6 @@ return [
         'ignore_files' => [
             '.gitignore',
             '.gitkeep',
-            '*.gz',
             '*.zip',
         ],
     ],
@@ -117,6 +116,7 @@ return [
     'features' => [
         'allow_download' => env('LOG_VIEWER_ALLOW_DOWNLOAD', true),
         'allow_clear' => env('LOG_VIEWER_ALLOW_CLEAR', true),
+        'allow_days_cleanup' => env('LOG_VIEWER_ALLOW_DAYS_CLEANUP', false),
         'allow_raw' => env('LOG_VIEWER_ALLOW_RAW', true),
         'allow_copy' => true,
         'default_lines' => 500,

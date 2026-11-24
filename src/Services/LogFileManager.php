@@ -75,13 +75,25 @@ class LogFileManager
         // Block sensitive file extensions
         $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
         $blockedExtensions = [
-            'php', 'phtml', 'php3', 'php4', 'php5', 'php7', 'php8', 'phps', 'inc',
+            'env', 'php', 'phtml', 'php3', 'php4', 'php5', 'php7', 'php8', 'phps', 'inc',
             'key', 'pem', 'crt', 'cer', 'der', 'p12', 'pfx',
             'sql', 'sqlite', 'sqlite3', 'db', 'mdb', 'bak', 'dump',
             'exe', 'dll', 'so', 'bin', 'sh', 'bat', 'cmd', 'ps1',
         ];
 
-        return in_array($ext, $blockedExtensions, true);
+        if (in_array($ext, $blockedExtensions, true)) {
+            return true;
+        }
+
+        // If gzipped archive, inspect the uncompressed target (e.g. database.sql.gz, production.env.gz)
+        if ($ext === 'gz') {
+            $subPath = substr($path, 0, -3);
+            if ($this->isSensitiveFile($subPath)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
@@ -259,10 +271,17 @@ class LogFileManager
         if (config('raytech-log-viewer.logs.scan_laravel_logs', true) && function_exists('storage_path')) {
             $laravelLogsPath = storage_path('logs');
             if (is_dir($laravelLogsPath)) {
-                $files = glob($laravelLogsPath . '/*.log');
+                $files = array_unique(array_merge(
+                    glob($laravelLogsPath . '/*.log') ?: [],
+                    glob($laravelLogsPath . '/*.log.gz') ?: [],
+                    glob($laravelLogsPath . '/*.gz') ?: []
+                ));
                 if ($files) {
                     foreach ($files as $filePath) {
                         $realPath = realpath($filePath) ?: $filePath;
+                        if ($this->isSensitiveFile($realPath)) {
+                            continue;
+                        }
                         $key = md5('laravel_' . $realPath);
                         $fileSize = file_exists($realPath) ? filesize($realPath) : 0;
                         $mtime = file_exists($realPath) ? filemtime($realPath) : 0;
@@ -278,6 +297,7 @@ class LogFileManager
                             'modified' => $mtime ? date('Y-m-d H:i:s', $mtime) : '-',
                             'modified_timestamp' => $mtime,
                             'is_empty' => $fileSize === 0,
+                            'is_compressed' => str_ends_with(strtolower($realPath), '.gz'),
                         ];
                     }
                 }
@@ -288,10 +308,16 @@ class LogFileManager
         if ($this->isServerLogsEnabled()) {
             $serverDirs = $this->getServerLogDirectories();
             foreach ($serverDirs as $dir) {
-                $files = glob(rtrim($dir, '/\\') . '/*.log');
+                $files = array_unique(array_merge(
+                    glob(rtrim($dir, '/\\') . '/*.log') ?: [],
+                    glob(rtrim($dir, '/\\') . '/*.log.gz') ?: []
+                ));
                 if ($files) {
                     foreach ($files as $filePath) {
                         $realPath = realpath($filePath) ?: $filePath;
+                        if ($this->isSensitiveFile($realPath)) {
+                            continue;
+                        }
                         $key = md5('server_' . $realPath);
                         if (isset($logFiles[$key])) {
                             continue;
@@ -310,6 +336,7 @@ class LogFileManager
                             'modified' => $mtime ? date('Y-m-d H:i:s', $mtime) : '-',
                             'modified_timestamp' => $mtime,
                             'is_empty' => $fileSize === 0,
+                            'is_compressed' => str_ends_with(strtolower($realPath), '.gz'),
                         ];
                     }
                 }
@@ -507,6 +534,11 @@ class LogFileManager
             return [];
         }
 
+        // Support native decompression for .gz archives (e.g. laravel-2026-11-20.log.gz)
+        if (str_ends_with(strtolower($filePath), '.gz')) {
+            return $this->readGzTail($filePath, $maxLines, $maxBytes);
+        }
+
         $fsize = filesize($filePath);
         if ($fsize === 0) {
             return [];
@@ -545,6 +577,50 @@ class LogFileManager
         }
 
         return $allLines;
+    }
+
+    /**
+     * Read the tail of a gzipped log file (.log.gz) safely using a bounded sliding window.
+     *
+     * @param string $filePath
+     * @param int $maxLines
+     * @param int $maxBytes
+     * @return array
+     */
+    protected function readGzTail(string $filePath, int $maxLines = 500, int $maxBytes = 4194304): array
+    {
+        if (!function_exists('gzopen')) {
+            return ['[Warning: PHP zlib extension is required to read gzipped log files.]'];
+        }
+
+        $gz = @gzopen($filePath, 'rb');
+        if (!$gz) {
+            return [];
+        }
+
+        $lines = [];
+        $bytesRead = 0;
+
+        while (!gzeof($gz) && $bytesRead < $maxBytes) {
+            $line = gzgets($gz, 65536);
+            if ($line === false) {
+                break;
+            }
+            $bytesRead += strlen($line);
+            $lines[] = rtrim($line, "\r\n");
+
+            // Sliding window to bound memory usage
+            if (count($lines) > ($maxLines * 2)) {
+                $lines = array_slice($lines, -$maxLines);
+            }
+        }
+        gzclose($gz);
+
+        if (count($lines) > $maxLines) {
+            $lines = array_slice($lines, -$maxLines);
+        }
+
+        return $lines;
     }
 
     /**
@@ -595,5 +671,16 @@ class LogFileManager
         $bytes /= (1 << (10 * $pow));
 
         return round($bytes, $precision) . ' ' . $units[$pow];
+    }
+
+    /**
+     * Get the cumulative size in bytes of all detected log files.
+     *
+     * @param array $allFiles
+     * @return int
+     */
+    public function getTotalSize(array $allFiles): int
+    {
+        return (int) array_sum(array_column($allFiles, 'size'));
     }
 }

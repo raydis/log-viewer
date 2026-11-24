@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/umesh240/log-viewer"><img src="https://img.shields.io/badge/version-1.6.1-brightgreen.svg" alt="Version"></a>
+  <a href="https://github.com/umesh240/log-viewer"><img src="https://img.shields.io/badge/version-1.7.0-brightgreen.svg" alt="Version"></a>
   <a href="https://packagist.org/packages/raytech/raytech-log-viewer"><img src="https://img.shields.io/badge/packagist-raytech%2Fraytech--log--viewer-orange.svg" alt="Packagist"></a>
   <a href="https://php.net"><img src="https://img.shields.io/badge/php-%5E8.0-8892BF.svg" alt="PHP Version"></a>
   <a href="https://laravel.com"><img src="https://img.shields.io/badge/laravel-%5E8.0%20%7C%20%5E9.0%20%7C%20%5E10.0%20%7C%20%5E11.0%20%7C%20%5E12.0-FF2D20.svg" alt="Laravel"></a>
@@ -129,6 +129,22 @@
   - View raw unformatted log in a new tab.
   - Clear / truncate log file safely with confirmation dialog.
   - Expand All / Collapse All button for bulk inspection.
+- 🗜️ **Compressed Log Support (`*.log.gz` / `*.gz`)**:
+  - Automatically discovers compressed log archives in both Laravel and server directories with special purple `GZ` badge indicators in the sidebar.
+  - Bounded sliding-window streaming tail decompression allows instant browsing without extracting full archives to disk or exhausting PHP memory.
+- 💾 **Cumulative Storage Usage Metric**:
+  - Live indicator in the sidebar footer displaying total discovered log files and aggregate disk footprint (e.g. `12 Log Files (4.85 MB)`).
+- ⌨️ **Vim & Power-User Keyboard Navigation**:
+  - Navigate log entries with <kbd>j</kbd>/<kbd>k</kbd> or arrow keys.
+  - Expand/collapse details with <kbd>Enter</kbd> or <kbd>Space</kbd>.
+  - Copy body content of selected entry with <kbd>c</kbd>.
+  - Quick-focus search input with <kbd>/</kbd>.
+  - Clear search or deselect with <kbd>Esc</kbd>.
+- 🔔 **Real-Time Incoming Error Alerts**:
+  - Toast notification and browser tab title flashing (`🔴 (X) New Error!`) when new errors arrive during live auto-refresh.
+- 🔗 **Active Session Persistence & Deep Search Linking**:
+  - Retains sort order, word wrap, active line limits, auto-refresh intervals, and multi-level filters across refreshes within the active browser session.
+  - Deep-link searches with URL query parameters (`?search=...`, `?q=...`, or `?query=...`).
 
 ---
 
@@ -326,6 +342,7 @@ The published configuration file is located at `config/raytech-log-viewer.php`. 
 | `LOG_VIEWER_SHORTCUT_KEY`    | `x`     | Character key for global hotkey |
 | `LOG_VIEWER_ALLOW_DOWNLOAD` | `true` | Allow downloading raw log files |
 | `LOG_VIEWER_ALLOW_CLEAR` | `true` | Allow clearing / truncating log files |
+| `LOG_VIEWER_ALLOW_DAYS_CLEANUP` | `false` | Enable or disable age-based retention cleanup (`--days`) via Artisan |
 | `LOG_VIEWER_ALLOW_RAW` | `true` | Allow viewing unformatted raw text in new tab |
 | `LOG_VIEWER_DIRS` | `null` | Extra directories to scan (comma-separated) |
 | `LOG_VIEWER_FILES` | `null` | Extra file paths to scan (comma-separated) |
@@ -375,6 +392,7 @@ RaytechLogViewer::allowAll();
 | `php artisan raytech-log-viewer:update --all` | Updates both assets and configuration |
 | `php artisan raytech-log-viewer:clear laravel.log` | Truncates / empties a specific log file |
 | `php artisan raytech-log-viewer:clear --all` | Truncates / empties all discovered log files |
+| `php artisan raytech-log-viewer:clear --days=30` | Safely purges log files older than X days (guarded by `features.allow_days_cleanup` in config) |
 | `php artisan raytech-log-viewer:uninstall` | Removes all published assets, views, and config |
 | `php artisan raytech-log-viewer:uninstall --keep-config` | Removes assets but keeps your custom config |
 
@@ -389,8 +407,11 @@ RaytechLogViewer::allowAll();
 | **Toggle Details** | Click anywhere on a log entry row |
 | **Sort Order** | Click `Newest First` / `Oldest First` toggle button |
 | **Bulk Expand / Collapse** | Click `Expand All` / `Collapse All` toolbar button |
-| **Search Logs** | <kbd>Ctrl</kbd> + <kbd>F</kbd> or <kbd>Cmd</kbd> + <kbd>F</kbd> |
-| **Clear Search** | <kbd>Esc</kbd> |
+| **Search Logs** | <kbd>Ctrl</kbd> + <kbd>F</kbd> or <kbd>/</kbd> |
+| **Clear Search / Deselect** | <kbd>Esc</kbd> |
+| **Vim Navigate Rows** | <kbd>j</kbd> / <kbd>k</kbd> or <kbd>↓</kbd> / <kbd>↑</kbd> |
+| **Vim Expand Row** | <kbd>Enter</kbd> or <kbd>Space</kbd> |
+| **Vim Copy Row** | <kbd>c</kbd> |
 | **Toggle Sidebar** | <kbd>Ctrl</kbd> + <kbd>B</kbd> or <kbd>Cmd</kbd> + <kbd>B</kbd> |
 | **Toggle Dark / Light Mode** | Click the Moon/Sun icon in topbar |
 | **Copy Log** | Click the copy icon on any row or inside the expanded details tab |

@@ -393,8 +393,16 @@ class RaytechLogViewerController extends Controller
             $autoInterval = (int) $request->session()->get('log_viewer_auto_refresh', $defaultAutoRefresh);
         }
 
+        // Active session persistent order
         $defaultOrder = config('raytech-log-viewer.features.default_order', 'desc');
-        $order = $request->query('order', $defaultOrder);
+        if ($request->has('order')) {
+            $order = $request->query('order');
+            if (in_array($order, ['desc', 'asc'], true)) {
+                $request->session()->put('log_viewer_order', $order);
+            }
+        } else {
+            $order = $request->session()->get('log_viewer_order', $defaultOrder);
+        }
         if (!in_array($order, ['desc', 'asc'], true)) {
             $order = 'desc';
         }
@@ -437,9 +445,13 @@ class RaytechLogViewerController extends Controller
         }
 
         $namePrefix = config('raytech-log-viewer.route.name', 'log-viewer.');
+        $totalSizeBytes = $this->fileManager->getTotalSize($allFiles);
+        $totalSizeFormatted = $this->fileManager->formatBytes($totalSizeBytes);
 
         return view('raytech-log-viewer::index', [
             'allFiles' => $allFiles,
+            'totalSizeBytes' => $totalSizeBytes,
+            'totalSizeFormatted' => $totalSizeFormatted,
             'laravelLogs' => $laravelLogs,
             'serverLogs' => $serverLogs,
             'showServerLogs' => $this->fileManager->isServerLogsEnabled(),

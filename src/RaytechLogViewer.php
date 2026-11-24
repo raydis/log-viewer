@@ -10,7 +10,7 @@ class RaytechLogViewer
     /**
      * Current package version.
      */
-    public const VERSION = '1.6.1';
+    public const VERSION = '1.7.0';
 
     /**
      * Optional custom access restriction callback(s) or middleware(s).

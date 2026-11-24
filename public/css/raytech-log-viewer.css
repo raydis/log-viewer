@@ -777,6 +777,13 @@ body {
     border-bottom: 1px solid var(--border-subtle);
 }
 
+.log-entry.keyboard-selected > .header-group,
+.log-entry.keyboard-selected > .entry-summary {
+    background: var(--bg-hover) !important;
+    outline: 2px solid #58a6ff;
+    outline-offset: -2px;
+}
+
 .header-text {
     font-weight: 500;
 }

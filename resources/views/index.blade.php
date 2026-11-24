@@ -267,6 +267,9 @@
                             <div class="file-item-left">
                                 <i class="far fa-file-alt"></i>
                                 <span class="file-name">{{ $f['name'] }}</span>
+                                @if(!empty($f['is_compressed']))
+                                    <span class="badge-gz" style="font-size: 8.5px; background: #6e40c9; color: #fff; padding: 1px 4px; border-radius: 3px; margin-left: 4px; font-weight: 600;">GZ</span>
+                                @endif
                             </div>
                             <span class="file-size-tag {{ $f['is_empty'] ? 'empty' : ($f['size'] > 10485760 ? 'huge' : ($f['size'] > 1048576 ? 'large' : '')) }}">
                                 {{ $f['size_formatted'] }}
@@ -295,6 +298,9 @@
                                 <div class="file-item-left">
                                     <i class="fa {{ str_contains(strtolower($f['name']), 'error') ? 'fa-exclamation-circle text-danger' : 'fa-file-code' }}"></i>
                                     <span class="file-name">{{ $f['name'] }}</span>
+                                    @if(!empty($f['is_compressed']))
+                                        <span class="badge-gz" style="font-size: 8.5px; background: #6e40c9; color: #fff; padding: 1px 4px; border-radius: 3px; margin-left: 4px; font-weight: 600;">GZ</span>
+                                    @endif
                                 </div>
                                 <span class="file-size-tag {{ $f['is_empty'] ? 'empty' : ($f['size'] > 10485760 ? 'huge' : ($f['size'] > 1048576 ? 'large' : '')) }}">
                                     {{ $f['size_formatted'] }}
@@ -310,7 +316,7 @@
             </div>
 
             <div class="sidebar-footer">
-                <span><i class="fa fa-hdd"></i> {{ count($allFiles) }} Log Files</span>
+                <span><i class="fa fa-hdd"></i> {{ count($allFiles) }} Log Files ({{ $totalSizeFormatted ?? '0 B' }})</span>
                 <span class="version-tag" title="RayTech Log Viewer Version">v{{ $version ?? '1.0.0' }}</span>
             </div>
         </aside>
@@ -528,6 +534,7 @@
             csrfToken: @json(csrf_token()),
             initialLineLimit: @json($lineLimit ?? 500),
             initialAutoRefresh: @json($currentAuto ?? 10000),
+            stats: @json($stats ?? []),
             initialLines: @json($parsedLines)
         };
     </script>

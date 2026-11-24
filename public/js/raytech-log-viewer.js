@@ -9,9 +9,34 @@
     let activeName = config.activeName || '';
     let activeLevels = new Set(['all']);
     let activeOrder = config.order || 'desc';
+    const savedOrder = sessionStorage.getItem('log_order');
+    if (savedOrder && (savedOrder === 'desc' || savedOrder === 'asc')) {
+        activeOrder = savedOrder;
+    }
     let autoRefreshInterval = null;
     let cachedEntries = Array.isArray(config.initialLines) ? config.initialLines : [];
     let entriesMap = new Map();
+
+    // Real-time error alerts & tab title flashing
+    let lastErrorCount = (config.stats && typeof config.stats.error === 'number') ? config.stats.error : null;
+    const originalDocumentTitle = document.title;
+    let titleFlashTimer = null;
+
+    function flashTabTitle(message) {
+        if (titleFlashTimer) clearInterval(titleFlashTimer);
+        let isAlt = false;
+        let count = 0;
+        titleFlashTimer = setInterval(() => {
+            document.title = isAlt ? message : originalDocumentTitle;
+            isAlt = !isAlt;
+            count++;
+            if (count > 6) {
+                clearInterval(titleFlashTimer);
+                document.title = originalDocumentTitle;
+                titleFlashTimer = null;
+            }
+        }, 800);
+    }
 
     function syncEntriesMap() {
         entriesMap.clear();
@@ -171,28 +196,118 @@
         });
     }
 
-    // Keyboard Shortcuts
+    // Power-User Keyboard Navigation (j / k / Enter / Space / c / / / Esc)
+    let selectedEntryIndex = -1;
+
+    function getVisibleEntries() {
+        return Array.from(document.querySelectorAll('.log-entry')).filter(el => el.style.display !== 'none');
+    }
+
+    function selectKeyboardEntry(index) {
+        const visible = getVisibleEntries();
+        if (visible.length === 0) return;
+
+        visible.forEach(el => el.classList.remove('keyboard-selected'));
+
+        if (index < 0) index = 0;
+        if (index >= visible.length) index = visible.length - 1;
+
+        selectedEntryIndex = index;
+        const target = visible[selectedEntryIndex];
+        if (target) {
+            target.classList.add('keyboard-selected');
+            target.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+    }
+
+    // Keyboard Shortcuts & Power-User Controls
     window.addEventListener('keydown', function(e) {
+        const tag = (document.activeElement && document.activeElement.tagName) ? document.activeElement.tagName.toLowerCase() : '';
+        const isEditing = (tag === 'input' || tag === 'textarea' || tag === 'select');
+
+        // Toggle Sidebar with Ctrl+B
         if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b') {
             e.preventDefault();
             if (sidebar) sidebar.classList.toggle('collapsed');
-        } else if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f') {
+            return;
+        }
+
+        // Search Focus with Ctrl+F
+        if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f') {
             e.preventDefault();
             if (searchInput) {
                 searchInput.focus();
                 searchInput.select();
             }
-        } else if (e.key === 'Escape' && document.activeElement === searchInput) {
-            clearSearch();
+            return;
+        }
+
+        // Quick Search with '/' when not editing text
+        if (e.key === '/' && !isEditing) {
+            e.preventDefault();
+            if (searchInput) {
+                searchInput.focus();
+                searchInput.select();
+            }
+            return;
+        }
+
+        // Escape handling
+        if (e.key === 'Escape') {
+            if (document.activeElement === searchInput) {
+                clearSearch();
+            } else {
+                const visible = getVisibleEntries();
+                visible.forEach(el => el.classList.remove('keyboard-selected'));
+                selectedEntryIndex = -1;
+            }
+            return;
+        }
+
+        // Vim & Arrow navigation when outside input fields
+        if (!isEditing && !e.ctrlKey && !e.metaKey && !e.altKey) {
+            if (e.key === 'j' || e.key === 'ArrowDown') {
+                e.preventDefault();
+                selectKeyboardEntry(selectedEntryIndex + 1);
+            } else if (e.key === 'k' || e.key === 'ArrowUp') {
+                e.preventDefault();
+                selectKeyboardEntry(selectedEntryIndex - 1);
+            } else if (e.key === 'Enter' || e.key === ' ') {
+                if (selectedEntryIndex >= 0) {
+                    const visible = getVisibleEntries();
+                    const current = visible[selectedEntryIndex];
+                    if (current) {
+                        e.preventDefault();
+                        const summary = current.querySelector('.entry-summary');
+                        if (summary) summary.click();
+                    }
+                }
+            } else if (e.key.toLowerCase() === 'c') {
+                if (selectedEntryIndex >= 0) {
+                    const visible = getVisibleEntries();
+                    const current = visible[selectedEntryIndex];
+                    if (current) {
+                        e.preventDefault();
+                        const copyBtn = current.querySelector('.btn-entry-copy');
+                        if (copyBtn) copyBtn.click();
+                    }
+                }
+            }
         }
     });
 
-    // Toggle Word Wrap
+    // Toggle Word Wrap with active session persistence
     const btnToggleWrap = document.getElementById('btnToggleWrap');
     if (btnToggleWrap && viewport) {
+        const savedWrap = sessionStorage.getItem('log_word_wrap');
+        if (savedWrap === '1') {
+            viewport.classList.add('nowrap');
+            btnToggleWrap.classList.add('active');
+        }
         btnToggleWrap.addEventListener('click', function() {
             viewport.classList.toggle('nowrap');
             this.classList.toggle('active');
+            sessionStorage.setItem('log_word_wrap', viewport.classList.contains('nowrap') ? '1' : '0');
         });
     }
 
@@ -222,11 +337,13 @@
         });
     }
 
-    // Order Toggle Button (Newest First / Oldest First)
+    // Order Toggle Button (Newest First / Oldest First with active session persistence)
     const btnToggleOrder = document.getElementById('btnToggleOrder');
     if (btnToggleOrder) {
+        updateOrderButton();
         btnToggleOrder.addEventListener('click', function() {
             activeOrder = activeOrder === 'desc' ? 'asc' : 'desc';
+            sessionStorage.setItem('log_order', activeOrder);
             updateOrderButton();
             reloadLogs(false);
         });
@@ -435,8 +552,26 @@
         });
     }
 
-    // Multi-Level Filtering
+    // Multi-Level Filtering with active session persistence
     const pillBadges = document.querySelectorAll('.pill-badge[data-filter]');
+    const savedLevels = sessionStorage.getItem('log_active_levels');
+    if (savedLevels) {
+        try {
+            const parsed = JSON.parse(savedLevels);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+                activeLevels = new Set(parsed);
+                pillBadges.forEach(b => {
+                    const bFilter = b.getAttribute('data-filter');
+                    if (activeLevels.has(bFilter)) {
+                        b.classList.add('active');
+                    } else {
+                        b.classList.remove('active');
+                    }
+                });
+            }
+        } catch (e) {}
+    }
+
     pillBadges.forEach(badge => {
         badge.addEventListener('click', function() {
             const filter = this.getAttribute('data-filter');
@@ -474,6 +609,7 @@
                 }
             });
 
+            sessionStorage.setItem('log_active_levels', JSON.stringify([...activeLevels]));
             applyFilters();
         });
     });
@@ -481,6 +617,16 @@
     // Live Search in Log Lines (Synchronized with 60 FPS requestAnimationFrame)
     let searchDebounce = null;
     let searchRaf = null;
+
+    // URL search query parameter resolution (?search=... or ?q=... or ?query=...)
+    try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const queryTerm = urlParams.get('search') || urlParams.get('q') || urlParams.get('query');
+        if (queryTerm && searchInput) {
+            searchInput.value = queryTerm;
+            if (searchClearBtn) searchClearBtn.style.display = 'block';
+        }
+    } catch (e) {}
 
     function scheduleFilter() {
         if (searchRaf) {
@@ -825,7 +971,7 @@
         .then(res => res.json())
         .then(data => {
             if (data && data.status) {
-                renderLogs(data);
+                renderLogs(data, silent);
             }
         })
         .catch(err => {
@@ -836,9 +982,20 @@
         });
     }
 
-    function renderLogs(data) {
+    function renderLogs(data, isAutoRefresh = false) {
         if (!viewport) return;
         cachedEntries = Array.isArray(data.lines) ? data.lines : [];
+
+        // Real-time incoming error notification during auto-refresh
+        if (data.stats && typeof data.stats.error === 'number') {
+            const currentErrors = data.stats.error;
+            if (isAutoRefresh && lastErrorCount !== null && currentErrors > lastErrorCount) {
+                const diff = currentErrors - lastErrorCount;
+                showToast(`⚠️ ${diff} new error(s) detected!`, 'error');
+                flashTabTitle(`🔴 (${diff}) New Error!`);
+            }
+            lastErrorCount = currentErrors;
+        }
 
         // Update stats
         if (data.stats) {
