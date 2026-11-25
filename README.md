@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/umesh240/log-viewer"><img src="https://img.shields.io/badge/version-1.0.0-brightgreen.svg" alt="Version"></a>
+  <a href="https://github.com/raytech-us/log-viewer"><img src="https://img.shields.io/badge/version-1.0.0-brightgreen.svg" alt="Version"></a>
   <a href="https://packagist.org/packages/raytech/raytech-log-viewer"><img src="https://img.shields.io/badge/packagist-raytech%2Fraytech--log--viewer-orange.svg" alt="Packagist"></a>
   <a href="https://php.net"><img src="https://img.shields.io/badge/php-%5E8.0%20%7C%20%5E8.1%20%7C%20%5E8.2%20%7C%20%5E8.3%20%7C%20%5E8.4%20%7C%20%5E8.5-8892BF.svg" alt="PHP Version"></a>
   <a href="https://laravel.com"><img src="https://img.shields.io/badge/laravel-%5E8.0%20%7C%20%5E9.0%20%7C%20%5E10.0%20%7C%20%5E11.0%20%7C%20%5E12.0-FF2D20.svg" alt="Laravel"></a>
@@ -73,8 +73,9 @@
 ## ⚡ Quick Start
 
 ```bash
-# 1. Require package
+# 1. Require package via Composer (or :dev-main for development branch)
 composer require raytech/raytech-log-viewer
+# Or: composer require raytech/raytech-log-viewer:dev-main
 
 # 2. Publish config and assets
 php artisan raytech-log-viewer:install
@@ -92,7 +93,13 @@ php artisan raytech-log-viewer:install
 Install via Composer in any standard Laravel application:
 
 ```bash
+# Standard release:
 composer require raytech/raytech-log-viewer
+
+# Or if requiring the development branch directly:
+composer require raytech/raytech-log-viewer:dev-main
+
+# Publish configuration and assets:
 php artisan raytech-log-viewer:install
 ```
 
@@ -104,7 +111,7 @@ If installing directly from a GitHub repository before a release tag is register
 
 1. Add the repository to your application's `composer.json`:
    ```bash
-   composer config repositories.raytech-log-viewer vcs https://github.com/umesh240/log-viewer.git
+   composer config repositories.raytech-log-viewer vcs https://github.com/raytech-us/log-viewer.git
    ```
 
 2. Require the development or main branch:

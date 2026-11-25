@@ -24,7 +24,7 @@ If you discover a security vulnerability within RayTech Log Viewer, **please do 
 ### Responsible Disclosure Process
 
 1. **Email or GitHub Advisory**:
-   - Submit a report privately via **[GitHub Security Advisories](https://github.com/umesh240/log-viewer/security/advisories/new)**.
+   - Submit a report privately via **[GitHub Security Advisories](https://github.com/raytech-us/log-viewer/security/advisories/new)**.
    - Alternatively, email the RayTech Core Security Team at **`dev@raytech.local`**.
 
 2. **Information to Include in Your Report**:

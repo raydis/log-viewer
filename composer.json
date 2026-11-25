@@ -1,8 +1,11 @@
 {
     "name": "raytech/raytech-log-viewer",
     "description": "Ready-to-use modern log viewer plugin for all Laravel and server logs with theme customization, live AJAX refresh, instant search, and zero database setup.",
-    "version": "1.0.0",
-    "homepage": "https://github.com/umesh240/log-viewer",
+    "homepage": "https://github.com/raytech-us/log-viewer",
+    "support": {
+        "issues": "https://github.com/raytech-us/log-viewer/issues",
+        "source": "https://github.com/raytech-us/log-viewer"
+    },
     "type": "library",
     "license": "MIT",
     "keywords": [
@@ -62,6 +65,9 @@
         }
     },
     "extra": {
+        "branch-alias": {
+            "dev-main": "1.0.x-dev"
+        },
         "laravel": {
             "providers": [
                 "Raytech\\LogViewer\\RaytechLogViewerServiceProvider"
