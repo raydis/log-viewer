@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/raytech-us/log-viewer"><img src="https://img.shields.io/badge/version-1.3.0-brightgreen.svg" alt="Version"></a>
+  <a href="https://github.com/raytech-us/log-viewer"><img src="https://img.shields.io/badge/version-1.3.1-brightgreen.svg" alt="Version"></a>
   <a href="https://packagist.org/packages/raytech/raytech-log-viewer"><img src="https://img.shields.io/badge/packagist-raytech%2Fraytech--log--viewer-orange.svg" alt="Packagist"></a>
   <a href="https://php.net"><img src="https://img.shields.io/badge/php-%3E%3D8.0-8892BF.svg" alt="PHP Version"></a>
   <a href="https://laravel.com"><img src="https://img.shields.io/badge/laravel-%3E%3D8.0-FF2D20.svg" alt="Laravel"></a>
