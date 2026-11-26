@@ -9,10 +9,10 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/raytech-us/log-viewer"><img src="https://img.shields.io/badge/version-1.0.0-brightgreen.svg" alt="Version"></a>
+  <a href="https://github.com/raytech-us/log-viewer"><img src="https://img.shields.io/badge/version-1.2.0-brightgreen.svg" alt="Version"></a>
   <a href="https://packagist.org/packages/raytech/raytech-log-viewer"><img src="https://img.shields.io/badge/packagist-raytech%2Fraytech--log--viewer-orange.svg" alt="Packagist"></a>
-  <a href="https://php.net"><img src="https://img.shields.io/badge/php-%5E8.0%20%7C%20%5E8.1%20%7C%20%5E8.2%20%7C%20%5E8.3%20%7C%20%5E8.4%20%7C%20%5E8.5-8892BF.svg" alt="PHP Version"></a>
-  <a href="https://laravel.com"><img src="https://img.shields.io/badge/laravel-%5E8.0%20%7C%20%5E9.0%20%7C%20%5E10.0%20%7C%20%5E11.0%20%7C%20%5E12.0-FF2D20.svg" alt="Laravel"></a>
+  <a href="https://php.net"><img src="https://img.shields.io/badge/php-%3E%3D8.0-8892BF.svg" alt="PHP Version"></a>
+  <a href="https://laravel.com"><img src="https://img.shields.io/badge/laravel-8.0%2B-FF2D20.svg" alt="Laravel"></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-blue.svg" alt="License"></a>
 </p>
 
@@ -63,8 +63,8 @@
 
 | Requirement | Supported Versions |
 |---|---|
-| **PHP** | `^8.0`, `^8.1`, `^8.2`, `^8.3`, `^8.4`, `^8.5` |
-| **Laravel Framework** | `^8.0`, `^9.0`, `^10.0`, `^11.0`, `^12.0` |
+| **PHP** | `8.0+` (PHP 8.0, 8.1, 8.2, 8.3, 8.4, 8.5+) |
+| **Laravel Framework** | `8.0+` (Laravel 8, 9, 10, 11, 12, 13+) |
 | **Database** | **None** (zero tables, zero migrations, zero queries) |
 | **Asset Compilation** | **None** (all styles, scripts, and fonts are 100% pre-packaged and offline) |
 
